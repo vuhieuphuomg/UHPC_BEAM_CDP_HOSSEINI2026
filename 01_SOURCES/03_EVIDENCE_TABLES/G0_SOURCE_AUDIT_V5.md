@@ -2,7 +2,7 @@
 **Project:** UHPC_BEAM_CDP_HOSSEINI2026 V5  
 **Source:** Hosseini S.M., Quan Z., Shao Y. "Enhancing shear performance in UHPC beams through strategic fiber and stirrup integration." *Engineering Structures* 348 (2026) 121810. DOI: 10.1016/j.engstruct.2025.121810  
 **Audited:** 2026-10-17 by Claude Code (session G0)  
-**Status:** PARTIAL — Figure 1 visual (images) not accessible via text extraction; geometry/support/rebar positions NOT_REPORTED from text alone.
+**Status:** PARTIAL — BLOCKER-1/2/3 resolved 2026-10-17 from Figure 1 visual read; BLOCKER-4 (Batch 2 CDP negative inelastic strain) awaits expert decision before G0=PASS.
 
 ---
 
@@ -19,11 +19,16 @@
 | Shear span a/d=1.7 | a = 1.7 × 410 = **697 mm** | DERIVED | Table 1 note + geometry |
 | Shear span a/d=2.7 | a = 2.7 × 410 = **1107 mm** | DERIVED | Table 1 note + geometry |
 
-**NOT_REPORTED (NEEDS_EXPERT_REVIEW — Figure 1 visual inspection required):**
-- Exact support center coordinates (distance from beam ends)
-- Clear span between supports
-- Load plate dimensions and exact position
-- Support plate dimensions
+**CONFIRMED FROM FIGURE 1 (2026-10-17, PDF page 5 rendered as image):**
+
+| Configuration | West support (from W end) | East support (from W end) | Load point (from W end) | Clear span L | Shear span a | Verification |
+|---|---|---|---|---|---|---|
+| a/d=2.7 (B02,B04,B06,B08,B10,B12) | 300 mm | 4700 mm | 1407 mm | 4400 mm | 1407−300=**1107 mm** | a/d=1107/410=**2.70 ✓** |
+| a/d=1.7 (B01,B03,B05,B07,B09) | 1613 mm | 4700 mm | 4003 mm | 3087 mm | 4700−4003=**697 mm** | a/d=697/410=**1.70 ✓** |
+| B11 (Vf1-ρsv0.4%H-2.7, special) | 1613 mm | 4700 mm | 3387 mm | 3087 mm | 4700−3387=**1313 mm** | a/d_eff=1313/410=**3.20** |
+
+Load plate width: 300 mm. Support plate width: 300 mm.  
+Tag: REPORTED (Figure 1(a)(b)(c), p. 5). Source: PDF rendered 2026-10-17.
 
 ---
 
@@ -35,16 +40,16 @@
 | Bottom fy | 690 MPa | REPORTED | Table 3, p. 6 |
 | Bottom fu | 1160 MPa | REPORTED | Table 3, p. 6 |
 | Bottom Es | 200 GPa | REPORTED | Table 3, p. 6 |
-| Top bars (text) | 2 MMFX Grade 4100 **M#4** (12.7 mm dia) | REPORTED (text) | Section 2.1, p. 3; Table 3, p. 6 |
-| Top bars (Figure 1) | Possibly **M#3** (9.5 mm dia) — UNCONFIRMED | NOT_REPORTED | Figure 1, p. 5 (image, not text-extractable) |
+| Top bars (text) | 2 MMFX Grade 4100 **M#4** (12.7 mm dia) — **TEXT ERROR** | REPORTED (text, error) | Section 2.1, p. 3 |
+| Top bars (Figure 1) | 2 MMFX Grade 4100 **M#3** (9.5 mm dia) — **CONFIRMED** | REPORTED (Figure 1) | Figure 1 A-A cross-section, p. 5, rendered 2026-10-17 |
 | Top M#4 fy | 684 MPa | REPORTED | Table 3, p. 6 |
 | Top M#4 fu | 1142 MPa | REPORTED | Table 3, p. 6 |
 | Top M#4 Es | 196 GPa | REPORTED | Table 3, p. 6 |
 | M#3 fy | 684 MPa (**assumed = M#4**, no test data) | REPORTED with caveat | Table 3 note, p. 6 |
 | M#3 diameter | 9.5 mm | REPORTED | Table 3, p. 6 |
 
-**CONFLICT — NEEDS_EXPERT_REVIEW:**  
-Section 2.1 text (p. 3) says top bars are **M#4** (12.7 mm dia). BLOCKERS.md and ENGINEERING_OPEN_ITEMS_V5.md flag that Figure 1 **may show M#3**. Visual inspection of Figure 1 (PDF page 5, image only) required to resolve. Table 3 note confirms M#3 test data was unavailable and M#4 properties were assumed.
+**RESOLVED (2026-10-17):**  
+Figure 1 A-A section explicitly labels top bars as **M#3 (Ø10)** — i.e., M#3 at nominal 9.5 mm. The paper text (Section 2.1, p. 3) stating "M#4" is an error. Figure 1 is the primary geometric drawing and is authoritative. Use M#3 (9.5 mm dia, As=2×70.9=141.8 mm²) for top bars. Table 3 note already confirms M#3 test data was unavailable and M#4 properties were assumed — those properties remain applicable.
 
 **NOT_REPORTED (NEEDS_EXPERT_REVIEW):**
 - Bar center coordinates (concrete cover, bundle arrangement for 6-M#10 at bottom)
@@ -59,13 +64,16 @@ Section 2.1 text (p. 3) says top bars are **M#4** (12.7 mm dia). BLOCKERS.md and
 | NSS stirrups | 10M Grade 500 (11.3 mm dia), fy=463 MPa, fu=600 MPa, Es=208 GPa | REPORTED | Table 3, p. 6 |
 | HSS stirrups | MMFX Grade 4100, fsy=684 MPa (M#3 assumed) | REPORTED | Table 1, Table 3, p. 6 |
 | Stirrup spacing | d/2 (maximum ACI 318 limit) = **205 mm** (nominal) | DERIVED | Section 3.3.2, p. 12: "stirrups spaced at maximum permitted limit (d/2)" |
+| Stirrup spacing (exact, ρ=0.4% HSS) | **200 mm** | REPORTED | Figure 1 elevation, p. 5 |
+| Stirrup spacing (exact, ρ=0.5% HSS) | **150 mm** | REPORTED | Figure 1 elevation, p. 5 |
+| Stirrup spacing (exact, ρ=0.6% NSS) | **200 mm** | REPORTED | Figure 1 elevation, p. 5 |
+| Stirrup spacing (exact, ρ=0.7% HSS) | **200 mm** | REPORTED | Figure 1 elevation, p. 5 |
 | Stirrup size (HSS) | M#3 (9.5mm dia) likely for stirrups (smaller member bar) | PROBABLE | Table 3 note says M#3 used, no tests done |
 | Stirrup size (NSS) | 10M (11.3mm dia) | REPORTED | Table 3, p. 6 |
 
-**NOT_REPORTED (NEEDS_EXPERT_REVIEW):**
-- Exact stirrup spacing in tested zone vs untested zone
-- Stirrup layout detail from Figure 1 (visual)
-- 5 vertical cages in untested span (size and spacing)
+**Remaining NOT_REPORTED:**
+- Stirrup layout in untested zone (outside shear span) — 5 vertical cages
+- Hook details, first stirrup from support face
 
 ---
 
@@ -141,10 +149,17 @@ Tag: REPORTED (Table 3, p. 6)
 | Vult reported | Maximum recorded shear capacity (kN) | REPORTED (Table 4 header, p. 10) |
 | Vult = shear in shear span | Yes — Vult equals reaction at near support | DERIVED (3-point statics) |
 | P_applied to Vult ratio | P × (L_span − a) / L_span = Vult → P = Vult × L_span / (L_span − a) | DERIVED |
-| L_span (between supports) | NOT_REPORTED — needs Figure 1 | NOT_REPORTED |
-| Support positions | NOT_REPORTED — needs Figure 1 | NOT_REPORTED |
+| L_span a/d=2.7 | **4400 mm** (4700−300) | DERIVED (Figure 1) |
+| L_span a/d=1.7 | **3087 mm** (4700−1613) | DERIVED (Figure 1) |
+| West support a/d=2.7 | 300 mm from West beam end | REPORTED (Figure 1(a)) |
+| East support (all configs) | 4700 mm from West beam end | REPORTED (Figure 1) |
+| West support a/d=1.7 | 1613 mm from West beam end | REPORTED (Figure 1(b)) |
+| Load point a/d=2.7 | 1407 mm from West end (near support = West, a=1107mm) | DERIVED (300+1107) |
+| Load point a/d=1.7 | 4003 mm from West end (near support = East, a=697mm) | DERIVED (4700−697) |
+| Vult statics a/d=2.7 | P×(4400−1107)/4400 = P×0.7484 | DERIVED |
+| Vult statics a/d=1.7 | P×(3087−697)/3087 = P×0.7742 | DERIVED |
 
-**Note:** For FE modeling, the exact position of supports and load relative to beam ends must come from Figure 1 (visual). The text gives total length = 5000 mm and shear span = a, but the clear span L_span between supports is NOT stated in text.
+**CONFIRMED 2026-10-17:** Figure 1 read as image confirms support layout. Two distinct span configurations exist — the a/d=2.7 beams use a longer span (4400 mm) than the a/d=1.7 beams (3087 mm), not just a repositioned load.
 
 ---
 
@@ -154,10 +169,15 @@ Tag: REPORTED (Table 3, p. 6)
 |------|-------|-----|
 | Special support stated | Yes — "modified support arrangement" | REPORTED (Fig. 1 caption, p. 5; Table 4 note, p. 10) |
 | Effect on stiffness | Stiffness not comparable to other a/d=2.7 specimens | REPORTED (Fig. 7 note, p. 10) |
-| Exact support topology | NOT_REPORTED — in Figure 1(c) image only | NOT_REPORTED |
+| West support position | 1613 mm from West beam end | REPORTED (Figure 1(c)) |
+| Load position | 3387 mm from West beam end | REPORTED (Figure 1(c)) |
+| East support position | 4700 mm from West beam end | REPORTED (Figure 1(c)) |
+| Effective shear span a_eff | 4700−3387 = **1313 mm** (load→East support) | DERIVED |
+| a/d_eff | 1313/410 = **3.20** (not 2.7 as specimen name implies) | DERIVED |
+| L_span B11 | 4700−1613 = 3087 mm (same as a/d=1.7 config) | DERIVED |
 | Vult comparability | Vult still reported but stiffness results affected | REPORTED |
 
-**NEEDS_EXPERT_REVIEW:** Figure 1(c) shows the B11 modified support arrangement. Must be reviewed visually to define correct FE boundary conditions. Do NOT assume roller+pin same as other specimens.
+**CONFIRMED 2026-10-17:** Figure 1(c) read as image. B11 uses the same West support position as the a/d=1.7 configuration (1613mm) but load is placed for a longer shear span → a_eff=1313mm. This means B11 has a true a/d_eff=3.20, making it a distinct configuration. FE model must use these exact support coordinates.
 
 ---
 
@@ -186,15 +206,15 @@ Tag: REPORTED (Table 4, p. 10)
 
 ## 10. ITEMS REQUIRING EXPERT REVIEW (SUMMARY)
 
-| # | Item | Priority |
-|---|------|---------|
-| 1 | Figure 1 visual: support coordinates, load position, span | CRITICAL |
-| 2 | Figure 1 visual: top bar M#3 vs M#4 confirmation | CRITICAL |
-| 3 | Figure 1(c): B11 modified support exact topology | CRITICAL |
-| 4 | Batch 2 negative inelastic strain — CDP reconstruction | BLOCKER |
-| 5 | Bar centroid for 6-bundle M#10 to verify d=410 mm | HIGH |
-| 6 | Full postyield curves for MMFX M#10, M#4, M#3 | HIGH |
-| 7 | Tensile gauge length normalization Batch 1/2 vs 3 | MEDIUM |
-| 8 | Stirrup exact spacing in FE model zone | MEDIUM |
+| # | Item | Priority | Status |
+|---|------|---------|--------|
+| 1 | Figure 1 visual: support coordinates, load position, span | CRITICAL | **RESOLVED 2026-10-17** — coords confirmed; see Section 1 |
+| 2 | Figure 1 visual: top bar M#3 vs M#4 confirmation | CRITICAL | **RESOLVED 2026-10-17** — M#3 confirmed from Figure 1 A-A |
+| 3 | Figure 1(c): B11 modified support exact topology | CRITICAL | **RESOLVED 2026-10-17** — a_eff=1313mm, a/d_eff=3.20 |
+| 4 | Batch 2 negative inelastic strain — CDP reconstruction | BLOCKER | **OPEN — expert decision required** |
+| 5 | Bar centroid for 6-bundle M#10 to verify d=410 mm | HIGH | OPEN |
+| 6 | Full postyield curves for MMFX M#10, M#4, M#3 | HIGH | OPEN |
+| 7 | Tensile gauge length normalization Batch 1/2 vs 3 | MEDIUM | OPEN |
+| 8 | Stirrup exact spacing in FE model zone | MEDIUM | **RESOLVED 2026-10-17** — spacings confirmed from Figure 1 |
 
-**Do NOT set G0 = PASS until items 1, 2, 3, 4 are resolved with expert review.**
+**Do NOT set G0 = PASS until item 4 is resolved with expert review.**

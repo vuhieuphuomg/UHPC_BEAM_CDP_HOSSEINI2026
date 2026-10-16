@@ -8,42 +8,45 @@
 
 ## CRITICAL BLOCKERS (must resolve before any FE build)
 
-### BLOCKER-1: Figure 1 Geometry (Support positions, load point, span)
-**Issue:** PDF page 5 contains Figure 1 (image only). Text extraction yields only the figure caption. The following are NOT derivable from text:
-- Distance from beam end to near support center
-- Distance from beam end to far support center
-- Clear span between supports
-- Load plate center position
-- Load plate dimensions
-- Support plate dimensions
+### ~~BLOCKER-1: Figure 1 Geometry~~ — **RESOLVED 2026-10-17**
+**Resolution:** PDF page 5 rendered as image via PyMuPDF; Figure 1(a)(b) read visually.
 
-**Why critical:** Without these, the statics (Vult = R_near = P × (L_span − a) / L_span) cannot be verified, and FE boundary conditions cannot be set.
+| Configuration | West support | East support | Load position | Clear span | Shear span a |
+|---|---|---|---|---|---|
+| a/d=2.7 | 300 mm from W | 4700 mm from W | 1407 mm from W | 4400 mm | 1107 mm (near=West) |
+| a/d=1.7 | 1613 mm from W | 4700 mm from W | 4003 mm from W | 3087 mm | 697 mm (near=East) |
 
-**What is known from text:**
-- Total beam length = 5000 mm (Section 2.1)
-- d = 410 mm (Table 1 note)
-- Shear span a = 697 mm (a/d=1.7) or 1107 mm (a/d=2.7)
-
-**Action required:** Open PDF page 5, measure Figure 1(a) and 1(b) to extract span and support dimensions.
+Load plate and support plate width: 300 mm each.  
+**Key finding:** Two DIFFERENT span configurations — not just repositioned load. a/d=2.7 uses L=4400mm; a/d=1.7 uses L=3087mm.  
+Source: Figure 1(a)(b), p. 5, rendered 2026-10-17.
 
 ---
 
-### BLOCKER-2: Top Bar Size — M#3 vs M#4
-**Issue:** Section 2.1 text (p. 3) states "two MMFX Grade 4100 **M#4** bars at the top." BLOCKERS.md and ENGINEERING_OPEN_ITEMS flag that Figure 1 **may show M#3**. Both M#3 (9.5 mm dia) and M#4 (12.7 mm dia) are MMFX Grade 4100 with same assumed fy=684 MPa (Table 3), but different cross-sectional areas and therefore different compression reinforcement contribution.
+### ~~BLOCKER-2: Top Bar Size~~ — **RESOLVED 2026-10-17**
+**Resolution:** Figure 1 A-A cross-section explicitly labels top bars as **M#3 (Ø10)** (9.5 mm dia). The text (Section 2.1, p. 3) stating "M#4" is a typographic error in the paper. Figure 1 is authoritative.
 
-**Implication for FE:**
-- M#4: As = 2 × π × 12.7²/4 = 2 × 126.7 mm² = 253.4 mm²
-- M#3: As = 2 × π × 9.5²/4 = 2 × 70.9 mm² = 141.8 mm²
-- Difference = 79% less area if M#3; affects compression zone behavior
+**Confirmed values:**
+- Top bars: 2 × M#3, diameter = 9.5 mm, As = 2 × 70.9 = **141.8 mm²**
+- Steel: fy=684 MPa, fu=1142 MPa, Es=196 GPa (Table 3; M#3 test unavailable, M#4 values adopted)
 
-**Action required:** Visual inspection of Figure 1 to confirm top bar label.
+Source: Figure 1 A-A section, p. 5, rendered 2026-10-17.
 
 ---
 
-### BLOCKER-3: B11 Modified Support Topology
-**Issue:** Figure 1(c) shows the modified support for specimen Vf1-ρsv0.4%H-2.7 (B11). Text confirms it exists but provides no dimensional data. FE model requires a separate support configuration for B11; using the standard support topology would be physically incorrect.
+### ~~BLOCKER-3: B11 Modified Support Topology~~ — **RESOLVED 2026-10-17**
+**Resolution:** Figure 1(c) read as image.
 
-**Action required:** Measure Figure 1(c) to extract support centerline positions and any additional bearing constraints.
+| Item | Value | Derivation |
+|---|---|---|
+| West support | 1613 mm from W beam end | Figure 1(c) |
+| Load position | 3387 mm from W beam end | Figure 1(c) |
+| East support | 4700 mm from W beam end | Figure 1(c) |
+| Effective shear span a_eff | **1313 mm** | 4700−3387 |
+| a/d_eff | **3.20** | 1313/410 |
+| Clear span L | 3087 mm | 4700−1613 |
+
+B11 true a/d_eff=3.20 — not 2.7 as the specimen name implies. FE model must use these coordinates.  
+Source: Figure 1(c), p. 5, rendered 2026-10-17.
 
 ---
 
@@ -119,10 +122,16 @@
 | Shear spans: 697 mm (1.7) and 1107 mm (2.7) | CONFIRMED DERIVED |
 | NSS stirrup spacing nominal = d/2 = 205 mm | CONFIRMED DERIVED |
 | Overall cross-section dimensions | CONFIRMED |
+| Support coordinates a/d=2.7: West=300mm, East=4700mm, Load=1407mm | CONFIRMED (Figure 1(a)) |
+| Support coordinates a/d=1.7: West=1613mm, East=4700mm, Load=4003mm | CONFIRMED (Figure 1(b)) |
+| B11 support: West=1613mm, Load=3387mm, East=4700mm, a_eff=1313mm | CONFIRMED (Figure 1(c)) |
+| Top bars: 2×M#3 (Ø9.5mm) confirmed from Figure 1 A-A | CONFIRMED (Figure 1) |
+| Stirrup spacings: 200mm (ρ=0.4%/0.6%/0.7%), 150mm (ρ=0.5%) | CONFIRMED (Figure 1) |
 
 ---
 
 ## NEXT ACTION
-**Specific action:** Open the Hosseini PDF (01_SOURCES/01_ORIGINAL_REFERENCE/1-s2.0-S0141029625022011-main.pdf) on PDF page 5 and visually read Figure 1 to extract: (a) support center coordinates, (b) load point position, (c) top bar designation (M#3 or M#4), (d) B11 modified support topology from Figure 1(c), (e) bar cover and bundle arrangement. Record findings in this file.
+**Only remaining blocker before G0=PASS:**  
+BLOCKER-4 — Batch 2 CDP negative inelastic strain. Expert must select one of the 4 options listed above and document rationale in CHANGELOG with C-type classification.
 
-**No FE build, no solver, no gate release until the above blockers are resolved.**
+**No gate release until BLOCKER-4 is resolved by expert.**

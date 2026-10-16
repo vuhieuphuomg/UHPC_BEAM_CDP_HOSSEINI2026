@@ -14,8 +14,8 @@ bottom_bar_count,6,—,REPORTED,"Section 2.1 p.3",Bundled
 bottom_bar_fy,690,MPa,REPORTED,"Table 3 p.6",
 bottom_bar_fu,1160,MPa,REPORTED,"Table 3 p.6",
 bottom_bar_Es,200,GPa,REPORTED,"Table 3 p.6",
-top_bar_type_text,M#4 MMFX Grade 4100,—,REPORTED,"Section 2.1 p.3",Text only; Figure 1 may show M#3 — NEEDS_EXPERT_REVIEW
-top_bar_type_figure,UNKNOWN — possibly M#3,—,NOT_REPORTED,"Figure 1 p.5 image","NEEDS_EXPERT_REVIEW: visual check required"
+top_bar_type_text,M#4 MMFX Grade 4100,—,REPORTED (text error),"Section 2.1 p.3","Paper text error — Figure 1 A-A shows M#3; text value superseded by Figure 1"
+top_bar_type_figure,2×M#3 MMFX Grade 4100,—,REPORTED,"Figure 1 A-A p.5 image (rendered 2026-10-17)","CONFIRMED: top bars are M#3 (Ø9.5mm); paper text citing M#4 is in error"
 top_bar_dia_M4,12.7,mm,REPORTED,"Table 3 p.6",If M#4 confirmed
 top_bar_dia_M3,9.5,mm,REPORTED,"Table 3 p.6",If M#3 used instead
 top_bar_count,2,—,REPORTED,"Section 2.1 p.3",
@@ -32,14 +32,25 @@ HSS_stirrup_dia,9.5,mm,REPORTED,"Table 3 p.6","M#3 nominal"
 HSS_stirrup_fy,684,MPa,REPORTED (assumed),"Table 3 note p.6","Assumed same as M#4; no direct test"
 HSS_stirrup_fu,1142,MPa,REPORTED (assumed),"Table 3 note p.6","Assumed same as M#4"
 HSS_stirrup_Es,196,GPa,REPORTED (assumed),"Table 3 note p.6","Assumed same as M#4"
-stirrup_spacing_nominal,205,mm,DERIVED,"d/2 = 410/2","ACI 318 max limit; exact from Figure 1 — NOT_REPORTED"
-stirrup_spacing_exact,NOT_REPORTED,mm,NOT_REPORTED,"Figure 1 p.5 image","NEEDS_EXPERT_REVIEW"
-support_center_near,NOT_REPORTED,mm,NOT_REPORTED,"Figure 1 p.5 image","Distance from beam end — NEEDS_EXPERT_REVIEW"
-support_center_far,NOT_REPORTED,mm,NOT_REPORTED,"Figure 1 p.5 image","NEEDS_EXPERT_REVIEW"
-load_position,NOT_REPORTED,mm,NOT_REPORTED,"Figure 1 p.5 image","From near support — NEEDS_EXPERT_REVIEW"
-bar_cover,NOT_REPORTED,mm,NOT_REPORTED,"Figure 1 p.5 image","NEEDS_EXPERT_REVIEW"
+stirrup_spacing_nominal,205,mm,DERIVED,"d/2 = 410/2","ACI 318 max limit; exact values confirmed from Figure 1"
+stirrup_spacing_rho0p4H,200,mm,REPORTED,"Figure 1 elevation p.5 (rendered 2026-10-17)","HSS ρ=0.4% (B11 B12-type); confirmed from Figure 1"
+stirrup_spacing_rho0p5H,150,mm,REPORTED,"Figure 1 elevation p.5 (rendered 2026-10-17)","HSS ρ=0.5% (B12); confirmed from Figure 1"
+stirrup_spacing_rho0p6N,200,mm,REPORTED,"Figure 1 elevation p.5 (rendered 2026-10-17)","NSS ρ=0.6% (B05-B08); confirmed from Figure 1"
+stirrup_spacing_rho0p7H,200,mm,REPORTED,"Figure 1 elevation p.5 (rendered 2026-10-17)","HSS ρ=0.7% (B09-B10); confirmed from Figure 1"
+support_west_ad27,300,mm,REPORTED,"Figure 1(a) p.5 (rendered 2026-10-17)","West support center from West beam end; a/d=2.7 config (B02 B04 B06 B08 B10 B12)"
+support_east_all,4700,mm,REPORTED,"Figure 1 p.5 (rendered 2026-10-17)","East support center from West beam end; all configurations"
+clear_span_ad27,4400,mm,DERIVED,"4700-300","Clear span between supports; a/d=2.7 config"
+load_position_ad27,1407,mm,DERIVED,"300+1107","Load point from West end; a=1107mm from West support"
+support_west_ad17,1613,mm,REPORTED,"Figure 1(b) p.5 (rendered 2026-10-17)","West support center from West beam end; a/d=1.7 config (B01 B03 B05 B07 B09)"
+clear_span_ad17,3087,mm,DERIVED,"4700-1613","Clear span between supports; a/d=1.7 config"
+load_position_ad17,4003,mm,DERIVED,"4700-697","Load point from West end; a=697mm from East support"
+B11_west_support,1613,mm,REPORTED,"Figure 1(c) p.5 (rendered 2026-10-17)","Same as a/d=1.7 config West support"
+B11_load_position,3387,mm,REPORTED,"Figure 1(c) p.5 (rendered 2026-10-17)","Load point from West end"
+B11_east_support,4700,mm,REPORTED,"Figure 1(c) p.5 (rendered 2026-10-17)","Same as all configs"
+B11_a_eff,1313,mm,DERIVED,"4700-3387","Effective shear span = load-to-East-support"
+B11_a_over_d_eff,3.20,—,DERIVED,"1313/410","True a/d for B11 (not 2.7 as specimen name implies)"
+bar_cover,NOT_REPORTED,mm,NOT_REPORTED,"Figure 1 p.5 image","NEEDS_EXPERT_REVIEW: clear cover not legible from rendering"
 bottom_bar_centroid_from_soffit,NOT_REPORTED,mm,NOT_REPORTED,"Figure 1 p.5 image","Needed to verify d=410mm; NEEDS_EXPERT_REVIEW"
-B11_support_topology,NOT_REPORTED,—,NOT_REPORTED,"Figure 1(c) p.5 image","Modified support for Vf1-rho0.4H-2.7; NEEDS_EXPERT_REVIEW"
 fiber_type,straight brass-coated,—,REPORTED,"Section 2.2.1 p.3",
 fiber_diameter,0.2,mm,REPORTED,"Section 2.2.1 p.3",
 fiber_length,13,mm,REPORTED,"Section 2.2.1 p.3",
