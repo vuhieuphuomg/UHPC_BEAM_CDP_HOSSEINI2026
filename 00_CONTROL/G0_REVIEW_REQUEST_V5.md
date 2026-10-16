@@ -65,7 +65,28 @@ Source: Figure 1(c), p. 5, rendered 2026-10-17.
 3. Use only the mean ± SD range to bracket admissible solutions
 4. Accept that the peak is a singular data point and use a bilinear/polynomial fit through reported mean ± 1σ
 
-**Action required:** Expert decision on physically justified reconstruction for Batch 2 CDP compression table. Document rationale in CHANGELOG with A/B/C/D classification.
+---
+
+### **EXPERT DECISION — 2026-10-17** — Tag: ADOPTED
+
+**Decision:** Option C1 — Reconstruct Batch 2 compression ascending branch using the **Graybeal–Fakeh nonlinear ascending branch model** (parabolic, zero tangent slope at peak). Raw measured values kept unchanged.
+
+**Rationale:**  
+The Graybeal–Fakeh model defines the ascending branch as a physically-motivated curve that naturally accommodates near-coincident elastic and total peak strains in high-Ec UHPC. Rather than adjusting the raw measurement (εcp=0.0032, Ec=47.3 GPa) or silently clipping, the curve model is used to reconstruct a multi-point inelastic strain table where:
+- The initial tangent modulus of the curve equals Ec=47.3 GPa
+- The curve passes through (εcp=0.0032, f'c=153.2 MPa) at the peak
+- Intermediate points on the ascending branch are generated from the model equation; at lower stress levels these points have well-defined positive inelastic strains
+- The peak point's near-zero inelastic strain reflects the physical reality that Batch 2 behaves nearly linear-elastically up to peak — the curve does not require a plastic strain floor at the peak
+
+**Raw data preserved:**  
+εcp=0.0032 (mean), f'c=153.2 MPa, Ec=47.3 GPa — NOT modified.
+
+**Implementation note (for CDP table builder):**  
+When constructing the CDP compression inelastic-strain table from the Graybeal–Fakeh curve, if the peak point yields ε_in < 0 after numerical discretization, use the first admissible point from the ascending branch as the table's peak entry and anchor the descending branch from there. The model calibration and table generation are a G1 task (CDP_TABLE_BUILD), not part of G0.
+
+**Classified:** Type C (engineering parameter — constitutive reconstruction method for Batch 2)  
+**Decision by:** Project engineer, 2026-10-17  
+**Recorded by:** Claude Code (Sonnet 4.6)
 
 ---
 
@@ -131,7 +152,7 @@ Source: Figure 1(c), p. 5, rendered 2026-10-17.
 ---
 
 ## NEXT ACTION
-**Only remaining blocker before G0=PASS:**  
-BLOCKER-4 — Batch 2 CDP negative inelastic strain. Expert must select one of the 4 options listed above and document rationale in CHANGELOG with C-type classification.
+**All blockers have expert decisions recorded. G0=PASS pending engineer gate approval.**
 
-**No gate release until BLOCKER-4 is resolved by expert.**
+BLOCKER-4 decision: ADOPTED (Graybeal–Fakeh C1 model, see above).  
+**Engineer must set G0=PASS manually in `00_CONTROL/GATES_V5.json`** — Claude Code does not modify gate files.
