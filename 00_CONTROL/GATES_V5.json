@@ -1,0 +1,70 @@
+{
+  "schema_version": "5.0",
+  "release_status": "PREPARATION_ONLY",
+  "scientific_gates": {
+    "G0_SOURCE_AUDIT": {
+      "status": "PASS",
+      "evidence": [
+        "01_SOURCES/03_EVIDENCE_TABLES/G0_SOURCE_AUDIT_V5.md",
+        "02_EXPERIMENT/02_AUDITED_LOCKED/EXPERIMENT_TARGETS_AUDITED_V5.csv",
+        "02_EXPERIMENT/03_GEOMETRY_REINFORCEMENT/SPECIMEN_GEOMETRY_AUDITED_V5.csv",
+        "00_CONTROL/G0_REVIEW_REQUEST_V5.md (all 4 blockers resolved)",
+        "REPO/tools/statics_verify.py: ALL 12 specimens PASS",
+        "00_CONTROL/CHANGELOG.md entry C-001 (Batch2 peak eps_in approximation)"
+      ],
+      "reviewed_by": "Project engineer (vuphuong.xdhn@gmail.com), 2026-10-17",
+      "pass_date": "2026-10-17",
+      "notes": "Conditional: Batch2 CDP peak eps_in=max(0,-0.000039)=0 approved as FE approximation (1.2% deviation). Full C1 curve verification deferred to G1."
+    },
+    "G1_MATERIAL_TABLE_VALID": {
+      "status": "HOLD",
+      "evidence": [],
+      "reviewed_by": null
+    },
+    "G2_MODEL_PREFLIGHT": {
+      "status": "HOLD",
+      "evidence": [],
+      "reviewed_by": null
+    },
+    "G3_COUPON_QA": {
+      "status": "HOLD",
+      "evidence": [],
+      "reviewed_by": null
+    },
+    "G4_P1_TENSION_SCREEN": {
+      "status": "HOLD",
+      "evidence": [],
+      "reviewed_by": null
+    },
+    "G5_P2_COMPRESSION_SCREEN": {
+      "status": "HOLD",
+      "evidence": [],
+      "reviewed_by": null
+    },
+    "G6_MESH_CDP_SENSITIVITY": {
+      "status": "HOLD",
+      "evidence": [],
+      "reviewed_by": null
+    },
+    "G7_HOLDOUT_FROZEN": {
+      "status": "HOLD",
+      "evidence": [],
+      "reviewed_by": null
+    },
+    "G8_ARCHIVE_QA": {
+      "status": "HOLD",
+      "evidence": [],
+      "reviewed_by": null
+    }
+  },
+  "special_prerequisites": {
+    "FROZEN_MODEL": {
+      "status": "HOLD",
+      "evidence": []
+    },
+    "HSS_STEEL_EVIDENCE": {
+      "status": "HOLD",
+      "evidence": []
+    }
+  }
+}

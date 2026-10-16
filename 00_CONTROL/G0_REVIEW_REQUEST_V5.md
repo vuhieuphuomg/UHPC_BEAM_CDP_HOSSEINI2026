@@ -67,25 +67,40 @@ Source: Figure 1(c), p. 5, rendered 2026-10-17.
 
 ---
 
-### **EXPERT DECISION — 2026-10-17** — Tag: ADOPTED
+### **EXPERT DECISION — 2026-10-17 (CONDITIONAL APPROVAL)** — Tag: ADOPTED
 
-**Decision:** Option C1 — Reconstruct Batch 2 compression ascending branch using the **Graybeal–Fakeh nonlinear ascending branch model** (parabolic, zero tangent slope at peak). Raw measured values kept unchanged.
+**Decision:**  
+Approximate the very small negative inelastic strain at peak to zero as FE input:
 
-**Rationale:**  
-The Graybeal–Fakeh model defines the ascending branch as a physically-motivated curve that naturally accommodates near-coincident elastic and total peak strains in high-Ec UHPC. Rather than adjusting the raw measurement (εcp=0.0032, Ec=47.3 GPa) or silently clipping, the curve model is used to reconstruct a multi-point inelastic strain table where:
-- The initial tangent modulus of the curve equals Ec=47.3 GPa
-- The curve passes through (εcp=0.0032, f'c=153.2 MPa) at the peak
-- Intermediate points on the ascending branch are generated from the model equation; at lower stress levels these points have well-defined positive inelastic strains
-- The peak point's near-zero inelastic strain reflects the physical reality that Batch 2 behaves nearly linear-elastically up to peak — the curve does not require a plastic strain floor at the peak
+```
+eps_in,peak (FE) = max(0,  εcp − f'c/Ec)
+                 = max(0,  0.0032 − 153.2/47300)
+                 = max(0,  −0.000039)
+                 = 0
+```
 
-**Raw data preserved:**  
-εcp=0.0032 (mean), f'c=153.2 MPa, Ec=47.3 GPa — NOT modified.
+**Justification:**  
+Absolute deviation = 0.000039. Relative to total peak strain: |0.000039 / 0.0032| = **1.2%** — less than the experimental scatter on εcp (SD=0.05%, relative SD ≈ 15.6%). The approximation is a FE input boundary condition, not a modification of the measured data.
 
-**Implementation note (for CDP table builder):**  
-When constructing the CDP compression inelastic-strain table from the Graybeal–Fakeh curve, if the peak point yields ε_in < 0 after numerical discretization, use the first admissible point from the ascending branch as the table's peak entry and anchor the descending branch from there. The model calibration and table generation are a G1 task (CDP_TABLE_BUILD), not part of G0.
+**Raw experimental data — UNCHANGED:**  
+f'c = 153.2 MPa · Ec = 47.3 GPa · εcp = 0.0032 (all mean values, Table 2)
 
-**Classified:** Type C (engineering parameter — constitutive reconstruction method for Batch 2)  
-**Decision by:** Project engineer, 2026-10-17  
+**Separation of experimental data vs FE parameters:**  
+| Parameter | Experimental (REPORTED) | FE input (ADOPTED/APPROXIMATED) |
+|---|---|---|
+| εcp | 0.0032 | 0.0032 (unchanged) |
+| f'c | 153.2 MPa | 153.2 MPa (unchanged) |
+| Ec | 47.3 GPa | 47.3 GPa (unchanged) |
+| eps_in at peak | N/A (not a direct measurement) | 0 (max(0, −0.000039)) |
+
+**Conditions on this approval (must be respected at G1):**  
+1. This zero-clip applies ONLY to the CDP compression table peak entry for Batch 2. All other data points are unchanged.  
+2. This approval does NOT automatically validate the Graybeal–Fakeh C1 ascending branch shape. At G1, the full curve equation must be derived, and all eps_in and eps_pl values verified to be ≥ 0 and non-decreasing.  
+3. If forcing eps_in,peak = 0 creates inconsistency in the C1 ascending branch (e.g. intermediate points have eps_in > 0 before peak), flag as BLOCKED at G1 and propose a physically justified curve adjustment — do not silently clip additional points.  
+4. All CHANGELOG entries at G1 must distinguish experimental data (REPORTED) from curve-model parameters (ADOPTED) from FE approximations (APPROXIMATED).
+
+**Classified:** Type C (FE input approximation — Batch 2 CDP peak only)  
+**Approved by:** Project engineer, 2026-10-17  
 **Recorded by:** Claude Code (Sonnet 4.6)
 
 ---
