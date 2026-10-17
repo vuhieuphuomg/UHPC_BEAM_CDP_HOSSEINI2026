@@ -778,6 +778,12 @@ class C4YanEcAdaptedCompression(BaseModel):
                 row = dict(row, inelastic_strain=round(ei, 8))
             cleaned.append(row)
             prev = ei
+
+        # Add eps_pl column: eps_pl = eps_in when dc=0 (no damage table defined at G1).
+        # With damage: eps_pl = eps_in - dc/(1-dc) × sigma/Ec (deferred to G2).
+        for row in cleaned:
+            row["eps_pl"] = row["inelastic_strain"]  # dc=0 assumption, tag NODAMAGE
+            row["eps_pl_tag"] = "dc=0 (no damage table at G1)"
         return cleaned
 
     def peak_strain_deviation(self):
@@ -798,15 +804,31 @@ class C4YanEcAdaptedCompression(BaseModel):
 
 
 class C4YanEcAdaptedLB(C4YanEcAdaptedCompression):
-    """C4 Yan Ec-adapted, lower bound: alpha_a=1.100, alpha_d=0.193."""
+    """C4 Yan Ec-adapted: alpha_a=1.100, alpha_d=0.193 (ascending LB, descending LB)."""
     MODEL_ID = "C4_ADAPTED_LB"
 
     def __init__(self, batch_data):
         super().__init__(batch_data, alpha_a=1.100, alpha_d=0.193)
 
 
+class C4YanEcAdaptedLAHD(C4YanEcAdaptedCompression):
+    """C4 Yan Ec-adapted: alpha_a=1.100, alpha_d=0.312 (ascending LB, descending UB)."""
+    MODEL_ID = "C4_ADAPTED_LA_HD"
+
+    def __init__(self, batch_data):
+        super().__init__(batch_data, alpha_a=1.100, alpha_d=0.312)
+
+
+class C4YanEcAdaptedHALD(C4YanEcAdaptedCompression):
+    """C4 Yan Ec-adapted: alpha_a=1.138, alpha_d=0.193 (ascending UB, descending LB)."""
+    MODEL_ID = "C4_ADAPTED_HA_LD"
+
+    def __init__(self, batch_data):
+        super().__init__(batch_data, alpha_a=1.138, alpha_d=0.193)
+
+
 class C4YanEcAdaptedUB(C4YanEcAdaptedCompression):
-    """C4 Yan Ec-adapted, upper bound: alpha_a=1.138, alpha_d=0.312."""
+    """C4 Yan Ec-adapted: alpha_a=1.138, alpha_d=0.312 (ascending UB, descending UB)."""
     MODEL_ID = "C4_ADAPTED_UB"
 
     def __init__(self, batch_data):
@@ -814,15 +836,18 @@ class C4YanEcAdaptedUB(C4YanEcAdaptedCompression):
 
 
 # ── MODEL REGISTRY ───────────────────────────────────────────────────────────
+# 4 C4_ADAPTED variants cover full 2×2 parameter space: alpha_a∈{1.100,1.138} × alpha_d∈{0.193,0.312}
 
 COMPRESSION_MODELS = {
-    "REF_POPOVICS": PopovicsCompression,
-    "C1": C1GraybealFakehCompression,
-    "C2": C2ZhaoCompression,
-    "C3": C3WangCompression,          # BLOCKED (CDP); raw σ–ε curves available
-    "C4": C4YanCompression,            # BLOCKED (CDP); original ecp, raw curves available
-    "C4_ADAPTED_LB": C4YanEcAdaptedLB,  # IMPLEMENTED; eps_c0 ADAPTED alpha_a=1.1
-    "C4_ADAPTED_UB": C4YanEcAdaptedUB,  # IMPLEMENTED; eps_c0 ADAPTED alpha_a=1.138
+    "REF_POPOVICS":    PopovicsCompression,
+    "C1":              C1GraybealFakehCompression,
+    "C2":              C2ZhaoCompression,
+    "C3":              C3WangCompression,         # BLOCKED (CDP); raw σ–ε reference only
+    "C4":              C4YanCompression,           # BLOCKED (CDP); original ecp; raw curves
+    "C4_ADAPTED_LB":   C4YanEcAdaptedLB,          # IMPLEMENTED; αa=1.100, αd=0.193
+    "C4_ADAPTED_LA_HD": C4YanEcAdaptedLAHD,       # IMPLEMENTED; αa=1.100, αd=0.312
+    "C4_ADAPTED_HA_LD": C4YanEcAdaptedHALD,       # IMPLEMENTED; αa=1.138, αd=0.193
+    "C4_ADAPTED_UB":   C4YanEcAdaptedUB,          # IMPLEMENTED; αa=1.138, αd=0.312
 }
 
 # Convenience factory aliases (backward-compatible)
@@ -831,4 +856,6 @@ def C2_STUB(batch_data): return C2ZhaoCompression(batch_data)
 def C3_STUB(batch_data): return C3WangCompression(batch_data)
 def C4_STUB(batch_data): return C4YanCompression(batch_data)
 def C4_ADAPTED_LB_STUB(batch_data): return C4YanEcAdaptedLB(batch_data)
+def C4_ADAPTED_LA_HD_STUB(batch_data): return C4YanEcAdaptedLAHD(batch_data)
+def C4_ADAPTED_HA_LD_STUB(batch_data): return C4YanEcAdaptedHALD(batch_data)
 def C4_ADAPTED_UB_STUB(batch_data): return C4YanEcAdaptedUB(batch_data)

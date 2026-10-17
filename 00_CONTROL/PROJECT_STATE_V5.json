@@ -2,7 +2,7 @@
   "schema_version": "5.0",
   "project_id": "UHPC_BEAM_CDP_HOSSEINI2026",
   "active_stage": "G1_MATERIAL_TABLE_VALID",
-  "next_action": "BUILD_CDP_COMPRESSION_TENSION_TABLES_BATCH1_2_3",
+  "next_action": "ENGINEER_REVIEW_C4_ADAPTED_2x2_VARIANTS_SELECT_FE_MODEL_THEN_UPDATE_MATRIX",
   "last_verified_abaqus_release": null,
   "solver_authorized": false,
   "automatic_submit_enabled": false,

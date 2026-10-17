@@ -6,10 +6,13 @@ from .compression import (
     C4YanCompression,
     C4YanEcAdaptedCompression,
     C4YanEcAdaptedLB,
+    C4YanEcAdaptedLAHD,
+    C4YanEcAdaptedHALD,
     C4YanEcAdaptedUB,
     COMPRESSION_MODELS,
     # Backward-compatible aliases
-    C1_STUB, C2_STUB, C3_STUB, C4_STUB, C4_ADAPTED_LB_STUB, C4_ADAPTED_UB_STUB,
+    C1_STUB, C2_STUB, C3_STUB, C4_STUB,
+    C4_ADAPTED_LB_STUB, C4_ADAPTED_LA_HD_STUB, C4_ADAPTED_HA_LD_STUB, C4_ADAPTED_UB_STUB,
 )
 from .tension import (
     BilinearTensionHardening,

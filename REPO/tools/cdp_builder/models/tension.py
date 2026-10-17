@@ -169,13 +169,17 @@ class T1TianFakehTension(BaseModel):
     @property
     def softening_status(self):
         return (
-            "BLOCKED_MISSING_PARAM: Tian post-peak σ(ε) = ft×(1−0.15×(ε−εt0)/(εu−εt0)) "
-            "requires εu (strain at 0.85×ft on descending). "
-            "εu not in Hosseini (2026) Table 2; Tian (2023) paper not in 01_SOURCES/02_SECONDARY_REFERENCE. "
-            "Fakeh σ–w extension (to 0.2×ft) also needs lc (mesh-size, unknown at G1). "
+            "BLOCKED_MISSING_PARAM: "
+            "Tian (2023) post-peak σ(ε) = ft × (1 − 0.15 × (ε−εt0)/(εu−εt0)) "
+            "[Fakeh (2025) Table 4 — formula DOCUMENTED, source: Fakeh secondary]. "
+            "Missing parameter: εu = total strain at σ = 0.85×ft on descending branch. "
+            "εu is NOT in Hosseini (2026) Table 2. "
+            "Tian (2023) original paper NOT in 01_SOURCES/02_SECONDARY_REFERENCE — "
+            "εu formula (likely function of fc and λf) cannot be verified. "
+            "Fakeh σ–w extension also needs lc (mesh size, unknown at G1). "
             "Do NOT use w = et_loc × GL_gauge (gauge length ≠ localization length). "
             "Fakeh (2025) Eq.8: λclc = 2.078×ft + 50.21 [mm]; wtu = εtu×λclc; "
-            "wto = εt0×lc (lc unknown)."
+            "wto = εt0×lc (lc unknown at G1)."
         )
 
 
@@ -284,6 +288,44 @@ class T2ZhaoTension(BaseModel):
             "wtu_mm": eps_tu * lclc,
             "wto_mm_per_lc": et_loc,  # wto = et_loc × lc; lc is mesh-dependent
             "lc_mm": "UNKNOWN — set from mesh characteristic length",
+        }
+
+    def fracture_energy_lambda_clc(self):
+        """
+        Estimate fracture energy GFI [N/mm = MPa·mm] using Fakeh λclc as localization length.
+
+        This is an ESTIMATE for engineering comparison. It does NOT replace a direct
+        experimental measurement of GFI. It uses Fakeh (2025) Eq.8 λclc as the localization
+        length in place of the FE mesh characteristic length lc.
+
+        Derivation (Zhao softening σ = ft × (εt0/ε)^αt, αt=0.6):
+          GFI = λclc × ∫_{εt0}^{εtu} ft × (εt0/ε)^0.6 dε
+              = λclc × ft × εt0 / 0.4 × ((εtu/εt0)^0.4 − 1)
+
+        Returns: dict with GFI_nmm, wto_mm, wtu_mm, lambda_clc_mm, tag.
+        """
+        ft_loc = self.b["ft_loc_mpa"]
+        et_loc = self.b["et_loc"]
+        eps_ratio = (self.ftu_ratio) ** (-1.0 / self._alpha_t)   # εtu/εt0
+        eps_tu = et_loc * eps_ratio
+        lclc = 2.078 * ft_loc + 50.21  # mm, Fakeh Eq.8
+        # GFI = λclc × ft × εt0 / αt × ((εtu/εt0)^αt − 1)
+        gfi = lclc * ft_loc * et_loc / self._alpha_t * (eps_ratio ** self._alpha_t - 1.0)
+        wto = et_loc * lclc
+        wtu = eps_tu * lclc
+        return {
+            "GFI_nmm": round(gfi, 3),
+            "wto_mm": round(wto, 3),
+            "wtu_mm": round(wtu, 3),
+            "lambda_clc_mm": round(lclc, 2),
+            "ft_loc_mpa": ft_loc,
+            "et_loc": et_loc,
+            "eps_tu": round(eps_tu, 6),
+            "tag": (
+                "ESTIMATE using Fakeh (2025) λclc as localization length. "
+                "NOT a direct measurement. For reference only. "
+                "Production σ–w table requires lc from FE mesh."
+            ),
         }
 
 

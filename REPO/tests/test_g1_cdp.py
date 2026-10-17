@@ -23,7 +23,7 @@ from cdp_builder.models import (
     PopovicsCompression, BilinearTensionHardening,
     C1GraybealFakehCompression, C2ZhaoCompression,
     C3WangCompression, C4YanCompression,
-    C4YanEcAdaptedCompression, C4YanEcAdaptedLB, C4YanEcAdaptedUB,
+    C4YanEcAdaptedCompression, C4YanEcAdaptedLB, C4YanEcAdaptedLAHD, C4YanEcAdaptedHALD, C4YanEcAdaptedUB,
     T1TianFakehTension, T2ZhaoTension,
     ModelStatus, ModelNotAvailableError,
     COMPRESSION_MODELS, TENSION_MODELS,
@@ -547,11 +547,17 @@ class TestT1TianFakeh(unittest.TestCase):
     def test_softening_status_no_gauge_length_default(self):
         for batch_id in (1, 2, 3):
             m = self._make(batch_id)
-            # Must warn against GL default conversion
             s = m.softening_status
             self.assertNotIn("w = et_loc × GL_gauge", s.replace("Do NOT use w = et_loc × GL_gauge", ""))
-            # Should reference εu as the missing parameter
             self.assertIn("εu", s)
+
+    def test_softening_status_documents_formula_source(self):
+        for batch_id in (1, 2, 3):
+            s = self._make(batch_id).softening_status
+            # Formula must be attributed to Fakeh Table 4
+            self.assertIn("Fakeh", s)
+            # Must state Tian (2023) is missing from repo
+            self.assertIn("Tian", s)
 
     def test_status_is_implemented(self):
         self.assertEqual(T1TianFakehTension.STATUS, ModelStatus.IMPLEMENTED)
@@ -643,6 +649,22 @@ class TestT2ZhaoTension(unittest.TestCase):
 
     def test_status_is_implemented(self):
         self.assertEqual(T2ZhaoTension.STATUS, ModelStatus.IMPLEMENTED)
+
+    def test_fracture_energy_positive(self):
+        for batch_id in (1, 2, 3):
+            result = T2ZhaoTension(BATCHES[batch_id]).fracture_energy_lambda_clc()
+            self.assertGreater(result["GFI_nmm"], 0.0,
+                               msg=f"B{batch_id}: GFI must be positive")
+            self.assertGreater(result["wtu_mm"], result["wto_mm"],
+                               msg=f"B{batch_id}: wtu must exceed wto")
+            self.assertGreater(result["lambda_clc_mm"], 50.0,  # λclc > 50.21 always
+                               msg=f"B{batch_id}: λclc too small")
+
+    def test_fracture_energy_tag_not_mesh(self):
+        # GFI estimate must be flagged as estimate (not final Abaqus-ready)
+        result = T2ZhaoTension(BATCHES[1]).fracture_energy_lambda_clc()
+        self.assertIn("ESTIMATE", result["tag"])
+        self.assertIn("λclc", result["tag"])
 
 
 class TestQAFunctions(unittest.TestCase):
@@ -809,10 +831,105 @@ class TestC4YanEcAdapted(unittest.TestCase):
             self.assertEqual(errors, [],
                              msg=f"B{batch_id} UB QA errors: {errors}")
 
+    # ── eps_pl column present and equals eps_in (dc=0 at G1) ─────────────────
+    def test_eps_pl_column_present_and_equals_eps_in(self):
+        for batch_id in (1, 2, 3):
+            rows = self._make_lb(batch_id).generate_table()
+            for i, r in enumerate(rows):
+                self.assertIn("eps_pl", r, msg=f"B{batch_id} LB row {i}: eps_pl column missing")
+                self.assertAlmostEqual(r["eps_pl"], r["inelastic_strain"], places=9,
+                                       msg=f"B{batch_id} LB row {i}: eps_pl != eps_in (dc=0)")
+
+    # ── Descending endpoint: terminal sigma ≈ 5% fc ──────────────────────────
+    def test_descending_endpoint_terminal_stress(self):
+        for batch_id in (1, 2, 3):
+            for make_fn in (self._make_lb, self._make_ub):
+                rows = make_fn(batch_id).generate_table()
+                fc = BATCHES[batch_id]["fc_mpa"]
+                sigma_last = rows[-1]["stress_mpa"]
+                self.assertAlmostEqual(sigma_last / fc, 0.05, delta=0.005,
+                                       msg=f"B{batch_id}: terminal sigma={sigma_last:.2f} not near 0.05×fc={0.05*fc:.2f}")
+
+
+class TestC4YanEcAdaptedCrossVariants(unittest.TestCase):
+    """Tests for C4_ADAPTED_LA_HD (αa=1.100,αd=0.312) and C4_ADAPTED_HA_LD (αa=1.138,αd=0.193)."""
+
+    def _make_lahd(self, batch_id):
+        return C4YanEcAdaptedLAHD(BATCHES[batch_id])
+
+    def _make_hald(self, batch_id):
+        return C4YanEcAdaptedHALD(BATCHES[batch_id])
+
+    def test_status_implemented(self):
+        self.assertEqual(C4YanEcAdaptedLAHD.STATUS, ModelStatus.IMPLEMENTED)
+        self.assertEqual(C4YanEcAdaptedHALD.STATUS, ModelStatus.IMPLEMENTED)
+
+    def test_all_eps_in_nonneg_lahd(self):
+        for batch_id in (1, 2, 3):
+            rows = self._make_lahd(batch_id).generate_table()
+            for i, r in enumerate(rows):
+                self.assertGreaterEqual(r["inelastic_strain"], 0.0,
+                                        msg=f"B{batch_id} LA_HD row {i}: eps_in<0")
+
+    def test_all_eps_in_nonneg_hald(self):
+        for batch_id in (1, 2, 3):
+            rows = self._make_hald(batch_id).generate_table()
+            for i, r in enumerate(rows):
+                self.assertGreaterEqual(r["inelastic_strain"], 0.0,
+                                        msg=f"B{batch_id} HA_LD row {i}: eps_in<0")
+
+    def test_monotone_lahd(self):
+        for batch_id in (1, 2, 3):
+            rows = self._make_lahd(batch_id).generate_table()
+            for i in range(1, len(rows)):
+                self.assertGreater(rows[i]["inelastic_strain"], rows[i - 1]["inelastic_strain"],
+                                   msg=f"B{batch_id} LA_HD row {i}: eps_in not strictly increasing")
+
+    def test_monotone_hald(self):
+        for batch_id in (1, 2, 3):
+            rows = self._make_hald(batch_id).generate_table()
+            for i in range(1, len(rows)):
+                self.assertGreater(rows[i]["inelastic_strain"], rows[i - 1]["inelastic_strain"],
+                                   msg=f"B{batch_id} HA_LD row {i}: eps_in not strictly increasing")
+
+    def test_qa_passes_lahd(self):
+        for batch_id in (1, 2, 3):
+            rows = self._make_lahd(batch_id).generate_table()
+            errors = qa_compression(rows, BATCHES[batch_id]["Ec_mpa"])
+            self.assertEqual(errors, [], msg=f"B{batch_id} LA_HD QA: {errors}")
+
+    def test_qa_passes_hald(self):
+        for batch_id in (1, 2, 3):
+            rows = self._make_hald(batch_id).generate_table()
+            errors = qa_compression(rows, BATCHES[batch_id]["Ec_mpa"])
+            self.assertEqual(errors, [], msg=f"B{batch_id} HA_LD QA: {errors}")
+
+    def test_peak_strain_identical_ascending_only(self):
+        # eps_c0 depends only on alpha_a, not alpha_d — LAHD and LB must share same peak strain
+        for batch_id in (1, 2, 3):
+            dev_lb = C4YanEcAdaptedLB(BATCHES[batch_id]).peak_strain_deviation()
+            dev_lahd = self._make_lahd(batch_id).peak_strain_deviation()
+            self.assertAlmostEqual(dev_lb["eps_c0_model"], dev_lahd["eps_c0_model"], places=9,
+                                   msg=f"B{batch_id}: LAHD and LB have different eps_c0 (same alpha_a=1.100)")
+
+    def test_descending_endpoint_positive_lahd(self):
+        # Terminal row must have sigma > 0 for all batches
+        for batch_id in (1, 2, 3):
+            rows = self._make_lahd(batch_id).generate_table()
+            self.assertGreater(rows[-1]["stress_mpa"], 0.0,
+                               msg=f"B{batch_id} LA_HD: terminal stress ≤ 0")
+
+    def test_descending_endpoint_positive_hald(self):
+        for batch_id in (1, 2, 3):
+            rows = self._make_hald(batch_id).generate_table()
+            self.assertGreater(rows[-1]["stress_mpa"], 0.0,
+                               msg=f"B{batch_id} HA_LD: terminal stress ≤ 0")
+
 
 class TestModelRegistryConsistency(unittest.TestCase):
     def test_compression_models_dict_has_all_keys(self):
-        for key in ("REF_POPOVICS", "C1", "C2", "C3", "C4", "C4_ADAPTED_LB", "C4_ADAPTED_UB"):
+        for key in ("REF_POPOVICS", "C1", "C2", "C3", "C4",
+                    "C4_ADAPTED_LB", "C4_ADAPTED_LA_HD", "C4_ADAPTED_HA_LD", "C4_ADAPTED_UB"):
             self.assertIn(key, COMPRESSION_MODELS)
 
     def test_tension_models_dict_has_all_keys(self):

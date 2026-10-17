@@ -107,10 +107,51 @@ Peak strain deviation is largest for Batch 2 (k=0.988 < 1.0) because reported ε
 
 **QA results:** All 6 tables (3 batches × 2 variants) PASS CDP QA: first εin=0, all εin≥0, strictly monotone, all σ>0. 111 unit tests ALL PASS.
 
+**Four variants implemented (2×2 survey, 2026-10-17):**
+
+| Model | αa | αd | B1 dev | B2 dev | B3 dev | Notes |
+|---|---|---|---|---|---|---|
+| C4_ADAPTED_LB    | 1.100 | 0.193 | +4.4% | +11.3% | +0.8% | αa LB + αd LB |
+| C4_ADAPTED_LA_HD | 1.100 | 0.312 | +4.4% | +11.3% | +0.8% | αa LB + αd UB |
+| C4_ADAPTED_HA_LD | 1.138 | 0.193 | +8.0% | +15.2% | +4.3% | αa UB + αd LB |
+| C4_ADAPTED_UB    | 1.138 | 0.312 | +8.0% | +15.2% | +4.3% | αa UB + αd UB |
+
+Peak deviation depends only on αa (ascending). αd only affects descending ductility.
+eps_pl column added to all C4_ADAPTED tables (= eps_in at G1; dc=0, no damage table yet).
+
 **Scope and constraints:**
-- Both variants ADAPTED: tag must appear in all output tables and plots.
+- All 4 variants ADAPTED: tag must appear in all output tables and plots.
 - Alpha coefficients are parameter ranges from secondary source — no unique Hosseini calibration without Yan (2010) original paper.
-- B2 peak strain deviation LB:+11.4% / UB:+15.2% must be noted in any FE run matrix entry.
+- B2 peak strain deviation: αa=1.1 variants +11.3%, αa=1.138 variants +15.2%. Must be noted in FE matrix entries.
 - Do NOT select one αa/αd pair solely because it matches experimental data (engineer decision required).
 - Do NOT use for holdout batch comparison without explicit approval.
-- FE matrix update is a separate step: engineer to review C4_ADAPTED_LB vs C4_ADAPTED_UB range and decide which variant(s) enter the run matrix.
+- FE matrix update is a separate step: engineer to review all 4 variants and decide which enter the run matrix.
+
+---
+
+## C-004 — 2026-10-17 — T2 fracture energy estimate; T1 softening parameter classified
+
+**Classification:** A — code (new method); C — engineering parameter classification  
+**Stage:** G1_MATERIAL_TABLE_VALID — documentation only; no new model implemented; G1 still HOLD
+
+### T2 Zhao tension — fracture energy estimate
+
+`fracture_energy_lambda_clc()` method added to T2ZhaoTension. Computes GFI using Fakeh (2025) λclc as localization length (not FE mesh lc). This is an ESTIMATE for engineering reference only.
+
+Derivation: GFI = λclc × ft × εt0 / 0.4 × ((εtu/εt0)^0.4 − 1)
+
+| Batch | ft_loc (MPa) | λclc (mm) | wtu (mm) | wto (mm) | GFI (N/mm) |
+|---|---|---|---|---|---|
+| B1 | 10.0 | 71.0 | 5.19 | 0.355 | 23.7 |
+| B2 | 9.3  | 69.5 | 5.08 | 0.348 | 21.6 |
+| B3 | 7.5  | 65.8 | 2.60 | 0.178 |  8.9 |
+
+**Important:** T2 generate_table() output (σ–εck) is MESH-DEPENDENT. Do NOT use as final Abaqus-ready input without σ–w conversion. GFI above uses Fakeh's calibrated λclc as a stand-in for lc — not a direct fracture toughness measurement.
+
+### T1 Tian tension — missing parameter classified
+
+Softening formula (from Fakeh 2025 Table 4, SECONDARY): σ(ε) = ft × (1 − 0.15 × (ε−εt0)/(εu−εt0))
+
+Missing: **εu** — total strain at σ = 0.85×ft on Tian descending branch. This is NOT in Hosseini (2026) Table 2. The Tian (2023) original paper (not in repo) contains the εu prediction formula (expected to be a function of fc and λf). Until Tian (2023) is obtained, T1 softening remains BLOCKED.
+
+Note: The formula `1 − 0.15×(...)` represents a 15% linear drop from ft at εt0 to 0.85×ft at εu. Fakeh then extends further to 0.2×ft — this extension formula requires the same εu plus lc (mesh characteristic length).
