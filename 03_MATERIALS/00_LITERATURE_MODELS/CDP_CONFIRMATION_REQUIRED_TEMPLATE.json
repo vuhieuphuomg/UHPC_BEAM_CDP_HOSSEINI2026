@@ -1,0 +1,56 @@
+{
+  "model_name": "Model-1",
+  "materials": [
+    {
+      "name": "UHPC_BATCH_1",
+      "E_MPa": 46000.0,
+      "nu": null,
+      "CDP": {
+        "psi_deg": null,
+        "eccentricity": null,
+        "fb0_over_fc0": null,
+        "Kc": null,
+        "viscosity": null
+      },
+      "compression_hardening_sigma_epsin": [],
+      "tension_GFI_ft_Gf_Nmm": [],
+      "compression_damage_dc_epsin": [],
+      "tension_damage_dt_epsck": [],
+      "evidence": "PAPER TABLE 2 elastic anchor only; Gf, full law and CDP flow NOT reported"
+    },
+    {
+      "name": "UHPC_BATCH_2",
+      "E_MPa": 47300.0,
+      "nu": null,
+      "CDP": {
+        "psi_deg": null,
+        "eccentricity": null,
+        "fb0_over_fc0": null,
+        "Kc": null,
+        "viscosity": null
+      },
+      "compression_hardening_sigma_epsin": [],
+      "tension_GFI_ft_Gf_Nmm": [],
+      "compression_damage_dc_epsin": [],
+      "tension_damage_dt_epsck": [],
+      "evidence": "PAPER TABLE 2 elastic anchor only; Gf, full law and CDP flow NOT reported"
+    },
+    {
+      "name": "UHPC_BATCH_3",
+      "E_MPa": 45400.0,
+      "nu": null,
+      "CDP": {
+        "psi_deg": null,
+        "eccentricity": null,
+        "fb0_over_fc0": null,
+        "Kc": null,
+        "viscosity": null
+      },
+      "compression_hardening_sigma_epsin": [],
+      "tension_GFI_ft_Gf_Nmm": [],
+      "compression_damage_dc_epsin": [],
+      "tension_damage_dt_epsck": [],
+      "evidence": "PAPER TABLE 2 elastic anchor only; Gf, full law and CDP flow NOT reported"
+    }
+  ]
+}

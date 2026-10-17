@@ -1,0 +1,42 @@
+[
+  {
+    "name": "fig2a_bending_vf1",
+    "pdf_vector_path": 14,
+    "digitized_points": 70,
+    "source_primitive_count": 13153,
+    "xmax": 2.68833,
+    "peak_x": 0.5065,
+    "peak_y": 66.1072,
+    "tail_y": 36.9848
+  },
+  {
+    "name": "fig2a_bending_vf2",
+    "pdf_vector_path": 15,
+    "digitized_points": 70,
+    "source_primitive_count": 9390,
+    "xmax": 2.75528,
+    "peak_x": 1.03822,
+    "peak_y": 99.1749,
+    "tail_y": 51.7837
+  },
+  {
+    "name": "fig2b_tension_vf1",
+    "pdf_vector_path": 57,
+    "digitized_points": 80,
+    "source_primitive_count": 9510,
+    "xmax": 0.00723,
+    "peak_x": 0.00146,
+    "peak_y": 7.1006,
+    "tail_y": 3.7082
+  },
+  {
+    "name": "fig2b_tension_vf2",
+    "pdf_vector_path": 58,
+    "digitized_points": 80,
+    "source_primitive_count": 48757,
+    "xmax": 0.00998,
+    "peak_x": 0.00467,
+    "peak_y": 10.4563,
+    "tail_y": 6.6411
+  }
+]

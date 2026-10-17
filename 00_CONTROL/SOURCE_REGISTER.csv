@@ -1,0 +1,4 @@
+source_id,role,title,url,status,notes
+HOSSEINI2026,EXPERIMENT,Enhancing shear performance in UHPC beams,https://doi.org/10.1016/j.engstruct.2025.121810,VERIFIED_DRIVE_PDF,Original PDF remains in parent folder id 1TUkaMsIZJr7iJ6plnbLnr89tA95ONGga
+FAKEH2025,CDP_MODELS,Recommended concrete damage plasticity parameters and constitutive models for UHPC in ABAQUS,https://doi.org/10.1016/j.engstruct.2025.120154,VERIFIED_DRIVE_PDF,Published models; do not assume raw experimental curves fully available
+LEHOANG2017,SUPPLEMENT,Influence of steel fiber content and aspect ratio on uniaxial tensile and compressive behavior,https://drive.google.com/file/d/18fKpVo3_49Xyt_FGhCI66K54NbQ0gxl0/view,VERIFIED_DRIVE_PDF,Other mixture not equal to DURA; benchmark only

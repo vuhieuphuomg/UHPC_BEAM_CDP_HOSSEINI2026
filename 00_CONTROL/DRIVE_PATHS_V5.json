@@ -1,0 +1,9 @@
+{
+  "parent_drive_folder": "https://drive.google.com/drive/folders/1l7XapSULCCwx4CoZ2iK72O24Wr6jnTZ6",
+  "project_folder": "https://drive.google.com/drive/folders/1Rb4jsh5d1gaVAJFoKxZxnUp3ENLr03Pm",
+  "v4_legacy_zip": "https://drive.google.com/file/d/1F74E9Th5FwZcd6Nql-nPwnVA5r2FpUvm/view",
+  "scratch_windows": "C:\\Abaqus\\UHPC_BEAM_CDP\\WORK",
+  "workspace_windows": "C:\\Abaqus\\UHPC_BEAM_CDP\\REPO",
+  "abaqus_code_path": "REPO/abaqus2022",
+  "drive_sync_policy": "ONLY_CLOSED_VERIFIED_FILES; NEVER RUN ABAQUS ON SYNCED DRIVE"
+}

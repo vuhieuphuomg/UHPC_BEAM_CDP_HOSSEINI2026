@@ -1,0 +1,1 @@
+Fig.2 digitized CSV/graphics are inherited from an earlier working pack and have not been independently redigitized or QA-verified in this V4 step. Never treat reconstructed figures as primary measured numerical data without checking the source PDF and plot coordinate mapping. CDP full postpeak inputs remain BLOCKED.

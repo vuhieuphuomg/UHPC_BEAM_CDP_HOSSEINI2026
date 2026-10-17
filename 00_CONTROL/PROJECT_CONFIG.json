@@ -1,0 +1,40 @@
+{
+  "project_id": "UHPC_BEAM_CDP_HOSSEINI2026",
+  "drive_parent_folder_id": "1l7XapSULCCwx4CoZ2iK72O24Wr6jnTZ6",
+  "drive_parent_url": "https://drive.google.com/drive/folders/1l7XapSULCCwx4CoZ2iK72O24Wr6jnTZ6",
+  "new_subfolder_name": "UHPC_BEAM_CDP_HOSSEINI2026",
+  "drive_mirror_local_path": "SET_ME_ON_WINDOWS_DO_NOT_RUN_ABAQUS_HERE",
+  "scratch_local_path": "C:\\Abaqus\\UHPC_BEAM_CDP\\WORK",
+  "abaqus_command": "abaqus",
+  "release": "Abaqus_2022_expected_verify_installed",
+  "python_kernel": "Python_2.7_expected_verify_installed",
+  "unit_system": {
+    "force": "N",
+    "length": "mm",
+    "stress": "MPa",
+    "time": "s",
+    "mass": "tonne_N_mm_s_if_needed"
+  },
+  "solver": "Abaqus_Standard_first_then_Explicit_only_if_justified",
+  "locked_experimental_reference": "https://doi.org/10.1016/j.engstruct.2025.121810",
+  "constitutive_reference": "https://doi.org/10.1016/j.engstruct.2025.120154",
+  "run_registry": "00_CONTROL/RUN_REGISTRY_MASTER_V3.csv",
+  "master_cae": "04_ABAQUS/00_MASTER_CAE/UHPC_BEAM_MASTER_V001.cae",
+  "auto_run_enabled": false,
+  "stage_priority": [
+    "P0_MATERIAL",
+    "P1_TENSION",
+    "P2_COMPRESSION",
+    "P4_MESH",
+    "P5_CDP_SENSITIVITY",
+    "P3_HOLDOUT",
+    "P6_HSS_CONDITIONAL"
+  ],
+  "archiving_policy": "Solver scratch locally; archive after explicit complete+postprocess+checksums; do not sync open ODB or overwrite completed run",
+  "preflight_status": "NOT_READY",
+  "permissions": {
+    "may_write_data_check": false,
+    "may_submit_solver": false,
+    "may_replace_locked_inputs": false
+  }
+}
