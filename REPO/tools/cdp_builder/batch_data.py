@@ -70,3 +70,42 @@ def tension_eps_crack_at_loc(batch_id):
     """Cracking strain at localization = et_loc - ft_loc/Ec."""
     b = BATCHES[batch_id]
     return b["et_loc"] - b["ft_loc_mpa"] / b["Ec_mpa"]
+
+
+# ── FIBER DIMENSIONS ─────────────────────────────────────────────────────────
+# ASSUMED: standard straight steel UHPC fibers from Fakeh (2025) Table 1 database.
+# Hosseini (2026) Table 2 does NOT report fiber cross-section diameter or length.
+# Must be confirmed or revised when fiber specifications are obtained from source.
+FIBER_DIMS = {
+    "l_mm": 13.0,
+    "df_mm": 0.2,
+    "tag": "ASSUMED",
+    "note": "Standard UHPC straight steel fiber 0.2mm × 13mm. NOT reported in Hosseini 2026.",
+}
+
+
+def lambda_f(batch_id):
+    """Fiber reinforcement index λf = vf × (l/df). Uses ASSUMED fiber dimensions."""
+    b = BATCHES[batch_id]
+    vf = b["vf_percent"] / 100.0
+    return vf * FIBER_DIMS["l_mm"] / FIBER_DIMS["df_mm"]
+
+
+def lambda_f_from_batch(b):
+    """λf from batch dict directly (no batch_id needed)."""
+    vf = b["vf_percent"] / 100.0
+    return vf * FIBER_DIMS["l_mm"] / FIBER_DIMS["df_mm"]
+
+
+def M_graybeal_descent(batch_id):
+    """Post-peak slope M [MPa/strain] = 7061.5 × λf^(-0.411).
+    Source: Fakeh (2025) Table 3, C1 post-peak (Eq. 9).
+    Uses ASSUMED fiber dimensions → tag ADOPTED."""
+    lf = lambda_f(batch_id)
+    return 7061.5 * (lf ** (-0.411))
+
+
+def M_graybeal_descent_from_batch(b):
+    """M from batch dict directly."""
+    lf = lambda_f_from_batch(b)
+    return 7061.5 * (lf ** (-0.411))

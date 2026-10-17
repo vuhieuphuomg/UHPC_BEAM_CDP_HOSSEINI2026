@@ -31,3 +31,35 @@ f'c = 153.2 MPa · Ec = 47.3 GPa · εcp = 0.0032 remain as REPORTED in all sour
 - All G1 CDP table entries must be labelled: REPORTED (raw measurement), ADOPTED (model fit), or APPROXIMATED (this eps_in=0 case).
 
 **Reference:** `00_CONTROL/G0_REVIEW_REQUEST_V5.md` BLOCKER-4 conditional approval.
+
+---
+
+## C-002 — 2026-10-17 — Fiber dimensions ASSUMED for C1 post-peak and λf calculation
+
+**Classification:** C — engineering parameter (ASSUMED, not from source)  
+**Stage:** G1_MATERIAL_TABLE_VALID — recorded as HOLD condition  
+
+**Context:**  
+C1 Graybeal–Fakeh post-peak slope M = 7061.5 × λf^(−0.411) (Fakeh 2025 Eq.9/Table 3) requires  
+fiber reinforcement index λf = vf × (l/df). Fiber dimensions (l = length, df = diameter) are  
+NOT reported in Hosseini 2026 Table 2 or any confirmed source for these UHPC batches.
+
+**Decision:**  
+Use standard UHPC straight steel fiber dimensions: l=13.0 mm, df=0.2 mm (ASSUMED).  
+These values are consistent with the majority of specimens in Fakeh 2025 Table 1 calibration database.
+
+λf values (ASSUMED):  
+- Batch 1 (vf=2%): λf = 0.02 × 65 = 1.30 → M ≈ 6337 MPa/strain  
+- Batch 2 (vf=2%): λf = 1.30 → M ≈ 6337 MPa/strain  
+- Batch 3 (vf=1%): λf = 0.65 → M ≈ 8428 MPa/strain  
+
+**Scope:**  
+- C1 post-peak rows are tagged ADOPTED (depend on ASSUMED fiber dims).  
+- C1 ascending branch is INDEPENDENT of fiber dims (uses only Ec, fc, ac, bc).  
+- T1 Tian model λf-based prediction (fte, ft, εte, εt0) is NOT used; Hosseini  
+  measured values used instead. T1 hardening table is INDEPENDENT of fiber dims.  
+- Must be revised if fiber specifications are confirmed from Hosseini source.
+
+**Required action before G1=PASS:**  
+Obtain fiber dimensions from Hosseini 2026 supplementary data or equipment records.  
+If confirmed = 0.2mm × 13mm → C-002 VALIDATED. If different → recalculate M and retag.

@@ -6,6 +6,7 @@ class ModelStatus(Enum):
     IMPLEMENTED_REFERENCE = "IMPLEMENTED_REFERENCE"  # not a named C/T model
     IMPLEMENTED = "IMPLEMENTED"                       # verified from source paper
     REVIEW_REQUIRED = "REVIEW_REQUIRED"               # source paper not in 01_SOURCES
+    BLOCKED = "BLOCKED"                               # equations available but technical blocker prevents valid table
 
 
 class ModelNotAvailableError(RuntimeError):
@@ -24,5 +25,9 @@ class BaseModel:
                 f"source paper '{self.SOURCE_PAPER}' not found in "
                 "01_SOURCES/02_SECONDARY_REFERENCE. "
                 "Add the paper and implement the equations before calling."
+            )
+        if self.STATUS == ModelStatus.BLOCKED:
+            raise ModelNotAvailableError(
+                f"Model {self.MODEL_ID} is BLOCKED: {getattr(self, 'BLOCKED_REASON', 'see model docstring')}"
             )
         raise NotImplementedError(f"{self.MODEL_ID}.generate_table()")
