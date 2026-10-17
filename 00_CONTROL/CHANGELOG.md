@@ -63,3 +63,54 @@ These values are consistent with the majority of specimens in Fakeh 2025 Table 1
 **Required action before G1=PASS:**  
 Obtain fiber dimensions from Hosseini 2026 supplementary data or equipment records.  
 If confirmed = 0.2mm × 13mm → C-002 VALIDATED. If different → recalculate M and retag.
+
+---
+
+## C-003 — 2026-10-17 — C3 Wang excluded from FE; C4_YAN_EC_ADAPTED developed as new IMPLEMENTED candidate
+
+**Classification:** C — engineering parameter (model selection and adaptation decision)  
+**Approved by:** Project engineer (vuphuong.xdhn@gmail.com), 2026-10-17  
+**Stage:** G1_MATERIAL_TABLE_VALID — C4_ADAPTED IMPLEMENTED; G1 still HOLD
+
+### C3 Wang — Exclusion from FE main matrix
+
+**Decision:** C3 Wang excluded from Abaqus FE run matrix. Retained as THEORETICAL REFERENCE ONLY.
+
+**Reason:** Wang (2016) parabolic ascending formula has initial slope = 2×f_peak/ε0 >> Ec_reported (where ε0 is from Wang Eq.7). This causes εin < 0 for the majority of the ascending branch in all three batches (B1:96.6%, B2:93.9%, B3:100%). The incompatibility is structural — it arises because Wang's own ε0 formula does not reproduce the experimentally measured Ec. Correcting it while retaining Wang's formula would require a different ascending formula constituting a new, distinct model. No clipping or parameter forcing was applied.
+
+**What is retained:** C3 class (STATUS=BLOCKED) remains in code for raw σ–ε diagnostic comparison. Diagnostic plots at `03_MATERIALS/plots/B{n}_C3_raw_curve.png`. C3 will NOT appear in Abaqus material tables or the FE run matrix.
+
+### C4_YAN_EC_ADAPTED — Engineering adaptation
+
+**Decision:** Set `eps_c0_model = alpha_a × fc / Ec` (not the reported εcp). This makes the initial tangent = Ec exactly, by construction.
+
+**Rationale:** The Yan (2010) rational formula for the ascending branch is:  
+`σ = fc × (αa×η − η²) / [1+(αa−2)×η]`  
+Its initial tangent is `αa × fc / εc0`. Setting `εc0_model = αa × fc / Ec` makes this tangent = Ec.  
+The resulting inelastic strain is provably non-negative:  
+`εin(η) = (fc/Ec) × η² × (αa−1)² / (1+(αa−2)×η) ≥ 0 ∀ η∈[0,1]`  
+No clipping required. This is an ADAPTED model (not raw Yan 2010).
+
+**Source:** Fakeh (2025) Table 3 [SECONDARY source]. Yan (2010) original paper not in repository.
+
+**Two variants implemented:**
+
+| Model | αa | αd | B1 eps_c0 dev | B2 eps_c0 dev | B3 eps_c0 dev |
+|---|---|---|---|---|---|
+| C4_ADAPTED_LB | 1.100 | 0.193 | +4.4% | +11.4% | +0.8% |
+| C4_ADAPTED_UB | 1.138 | 0.312 | +8.1% | +15.2% | +4.3% |
+
+`dev = (eps_c0_model − ecp_reported) / ecp_reported × 100%`  
+Peak strain deviation is largest for Batch 2 (k=0.988 < 1.0) because reported εcp is very close to elastic recovery.
+
+**What is NOT changed:** fc and Ec remain as experimentally reported for all three batches. Raw experimental measurements in BATCHES dict are untouched.
+
+**QA results:** All 6 tables (3 batches × 2 variants) PASS CDP QA: first εin=0, all εin≥0, strictly monotone, all σ>0. 111 unit tests ALL PASS.
+
+**Scope and constraints:**
+- Both variants ADAPTED: tag must appear in all output tables and plots.
+- Alpha coefficients are parameter ranges from secondary source — no unique Hosseini calibration without Yan (2010) original paper.
+- B2 peak strain deviation LB:+11.4% / UB:+15.2% must be noted in any FE run matrix entry.
+- Do NOT select one αa/αd pair solely because it matches experimental data (engineer decision required).
+- Do NOT use for holdout batch comparison without explicit approval.
+- FE matrix update is a separate step: engineer to review C4_ADAPTED_LB vs C4_ADAPTED_UB range and decide which variant(s) enter the run matrix.

@@ -10,7 +10,7 @@
 
 - **BLOCKED:** 6
 - **DEGENERATE:** 1
-- **IMPLEMENTED:** 12
+- **IMPLEMENTED:** 18
 - **IMPLEMENTED_REFERENCE:** 5
 
 ## Compression tables
@@ -22,16 +22,22 @@
 | 1 | C2 | IMPLEMENTED | `03_MATERIALS\tables\B1_C2_compression.csv` | PASS | — |
 | 1 | C3 | BLOCKED | — | PASS | BLOCKED: Ascending parabolic model (initial slope = 2×f_peak/ε0 >> Ec). εin = ε − σ/Ec < 0 for ~94–100% of ascending branch in all 3 batches (Wang Eq.7 ε0; B1:~96.6%, B2:~93.9%, B3:100%). Expert engineering decision required before generating CDP table. A rewritten ascending branch is a different hybrid law — use new model ID.; εin analysis: α_Wang=1.0331; η_cross=0.9669; εin<0 on 96.7% of ascending; εin_peak=1.10e-04; ε0_Wang=0.00343; ε20=0.00735 |
 | 1 | C4 | BLOCKED | — | PASS | BLOCKED: Ascending rational formula: initial tangent αa×fc/εc0 > Ec for all batches (αa ∈ [1.1,1.138]; k=Ec×εcp/fc ≈ 0.988–1.091). εin < 0 for ~49–100% of ascending branch (batch/αa-dependent). αa, αd are parameter ranges only from secondary source (Fakeh Table 3); no unique calibration for Hosseini batches without Yan (2010) original paper.; εin<0 on ascending: αa=1.1: 89.6%; αa=1.138: 91.9% (k=Ec×εcp/fc=1.0537) |
+| 1 | C4_ADAPTED_LB | IMPLEMENTED | `03_MATERIALS\tables\B1_C4_ADAPTED_LB_compression.csv` | PASS | ADAPTED eps_c0: 0.003654 vs ecp_rep=0.00350 (+4.4%); k=1.0537; eps_in_peak=3.32e-04; αa=1.1 αd=0.193 [SECONDARY source] |
+| 1 | C4_ADAPTED_UB | IMPLEMENTED | `03_MATERIALS\tables\B1_C4_ADAPTED_UB_compression.csv` | PASS | ADAPTED eps_c0: 0.003780 vs ecp_rep=0.00350 (+8.0%); k=1.0537; eps_in_peak=4.58e-04; αa=1.138 αd=0.312 [SECONDARY source] |
 | 2 | REF_POPOVICS | DEGENERATE | — | PASS | DEGENERATE: alpha = Ec*ecp/fc = 0.9880 <= 1.0; Popovics model invalid for Batch 2. Use C1-C4 (REVIEW_REQUIRED) instead. |
 | 2 | C1 | IMPLEMENTED | `03_MATERIALS\tables\B2_C1_compression.csv` | PASS | Post-peak branch (15 pts) is ADOPTED (C1: Fakeh Eq.9 M=7061.5×λf^-0.411 with ASSUMED fiber dims l=13mm df=0.2mm; REF_POPOVICS: linear descent placeholder).; CHANGELOG C-001: eps_in,peak clipped from -3.9e-5 → 0 (FE approximation, 1.2% deviation, within scatter). |
 | 2 | C2 | IMPLEMENTED | `03_MATERIALS\tables\B2_C2_compression.csv` | PASS | CHANGELOG C-001: eps_in,peak clipped from -3.9e-5 → 0 (FE approximation, 1.2% deviation, within scatter). |
 | 2 | C3 | BLOCKED | — | PASS | BLOCKED: Ascending parabolic model (initial slope = 2×f_peak/ε0 >> Ec). εin = ε − σ/Ec < 0 for ~94–100% of ascending branch in all 3 batches (Wang Eq.7 ε0; B1:~96.6%, B2:~93.9%, B3:100%). Expert engineering decision required before generating CDP table. A rewritten ascending branch is a different hybrid law — use new model ID.; εin analysis: α_Wang=1.0607; η_cross=0.9393; εin<0 on 93.9% of ascending; εin_peak=1.97e-04; ε0_Wang=0.00344; ε20=0.00731 |
 | 2 | C4 | BLOCKED | — | PASS | BLOCKED: Ascending rational formula: initial tangent αa×fc/εc0 > Ec for all batches (αa ∈ [1.1,1.138]; k=Ec×εcp/fc ≈ 0.988–1.091). εin < 0 for ~49–100% of ascending branch (batch/αa-dependent). αa, αd are parameter ranges only from secondary source (Fakeh Table 3); no unique calibration for Hosseini batches without Yan (2010) original paper.; εin<0 on ascending: αa=1.1: 100.0%; αa=1.138: 100.0% (k=Ec×εcp/fc=0.9880) |
+| 2 | C4_ADAPTED_LB | IMPLEMENTED | `03_MATERIALS\tables\B2_C4_ADAPTED_LB_compression.csv` | PASS | CHANGELOG C-001: eps_in,peak clipped from -3.9e-5 → 0 (FE approximation, 1.2% deviation, within scatter).; ADAPTED eps_c0: 0.003563 vs ecp_rep=0.00320 (+11.3%); k=0.9880; eps_in_peak=3.24e-04; αa=1.1 αd=0.193 [SECONDARY source] |
+| 2 | C4_ADAPTED_UB | IMPLEMENTED | `03_MATERIALS\tables\B2_C4_ADAPTED_UB_compression.csv` | PASS | CHANGELOG C-001: eps_in,peak clipped from -3.9e-5 → 0 (FE approximation, 1.2% deviation, within scatter).; ADAPTED eps_c0: 0.003686 vs ecp_rep=0.00320 (+15.2%); k=0.9880; eps_in_peak=4.47e-04; αa=1.138 αd=0.312 [SECONDARY source] |
 | 3 | REF_POPOVICS | IMPLEMENTED_REFERENCE | `03_MATERIALS\tables\B3_REF_POPOVICS_compression.csv` | PASS | Post-peak branch (15 pts) is ADOPTED (C1: Fakeh Eq.9 M=7061.5×λf^-0.411 with ASSUMED fiber dims l=13mm df=0.2mm; REF_POPOVICS: linear descent placeholder). |
 | 3 | C1 | IMPLEMENTED | `03_MATERIALS\tables\B3_C1_compression.csv` | PASS | Post-peak branch (15 pts) is ADOPTED (C1: Fakeh Eq.9 M=7061.5×λf^-0.411 with ASSUMED fiber dims l=13mm df=0.2mm; REF_POPOVICS: linear descent placeholder). |
 | 3 | C2 | IMPLEMENTED | `03_MATERIALS\tables\B3_C2_compression.csv` | PASS | — |
 | 3 | C3 | BLOCKED | — | PASS | BLOCKED: Ascending parabolic model (initial slope = 2×f_peak/ε0 >> Ec). εin = ε − σ/Ec < 0 for ~94–100% of ascending branch in all 3 batches (Wang Eq.7 ε0; B1:~96.6%, B2:~93.9%, B3:100%). Expert engineering decision required before generating CDP table. A rewritten ascending branch is a different hybrid law — use new model ID.; εin analysis: α_Wang=0.9713; η_cross=1.0287; εin<0 on 100.0% of ascending; εin_peak=-1.05e-04; ε0_Wang=0.00356; ε20=0.00804 |
 | 3 | C4 | BLOCKED | — | PASS | BLOCKED: Ascending rational formula: initial tangent αa×fc/εc0 > Ec for all batches (αa ∈ [1.1,1.138]; k=Ec×εcp/fc ≈ 0.988–1.091). εin < 0 for ~49–100% of ascending branch (batch/αa-dependent). αa, αd are parameter ranges only from secondary source (Fakeh Table 3); no unique calibration for Hosseini batches without Yan (2010) original paper.; εin<0 on ascending: αa=1.1: 48.6%; αa=1.138: 78.7% (k=Ec×εcp/fc=1.0913) |
+| 3 | C4_ADAPTED_LB | IMPLEMENTED | `03_MATERIALS\tables\B3_C4_ADAPTED_LB_compression.csv` | PASS | ADAPTED eps_c0: 0.004032 vs ecp_rep=0.00400 (+0.8%); k=1.0913; eps_in_peak=3.67e-04; αa=1.1 αd=0.193 [SECONDARY source] |
+| 3 | C4_ADAPTED_UB | IMPLEMENTED | `03_MATERIALS\tables\B3_C4_ADAPTED_UB_compression.csv` | PASS | ADAPTED eps_c0: 0.004171 vs ecp_rep=0.00400 (+4.3%); k=1.0913; eps_in_peak=5.06e-04; αa=1.138 αd=0.312 [SECONDARY source] |
 
 ## Tension tables
 
@@ -76,6 +82,21 @@ C1 and C2 implemented for Batch 2. CHANGELOG C-001: peak eps_in clip approved.
 **Fiber dimensions ASSUMED:** l=13mm, df=0.2mm (not in Hosseini 2026).
 C1 post-peak slope M and T1 λf-based formulas use ASSUMED fiber dimensions.
 Confirm fiber specifications before using C1 post-peak for structural analysis.
+
+### C4_YAN_EC_ADAPTED — peak strain deviation from reported ecp
+
+eps_c0_model = αa × fc / Ec (ADAPTED; initial tangent = Ec exactly by construction).  
+Deviation from reported ecp: ratio = αa / k  where k = Ec × ecp / fc.
+
+| Batch | fc (MPa) | Ec (MPa) | ecp (rep.) | k | αa=1.100: eps_c0 | dev% | αa=1.138: eps_c0 | dev% |
+|-------|---------|---------|-----------|---|----------------|------|----------------|------|
+| B1 | 152.8 | 46000 | 0.0035 | 1.054 | 0.003652 | +4.3% | 0.003782 | +8.1% |
+| B2 | 153.2 | 47300 | 0.0032 | 0.988 | 0.003565 | +11.4% | 0.003687 | +15.2% |
+| B3 | 166.4 | 45400 | 0.0040 | 1.091 | 0.004028 | +0.7% | 0.004172 | +4.3% |
+
+**C3 Wang — excluded from Abaqus FE matrix (theoretical reference only).**  
+Engineering decision 2026-10-17: C3 Wang not compatible with Ec_reported for Abaqus CDP.
+Raw σ–ε curves retained for comparison. Requires expert decision before FE inclusion.
 
 ---
 

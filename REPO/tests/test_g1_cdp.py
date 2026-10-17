@@ -23,6 +23,7 @@ from cdp_builder.models import (
     PopovicsCompression, BilinearTensionHardening,
     C1GraybealFakehCompression, C2ZhaoCompression,
     C3WangCompression, C4YanCompression,
+    C4YanEcAdaptedCompression, C4YanEcAdaptedLB, C4YanEcAdaptedUB,
     T1TianFakehTension, T2ZhaoTension,
     ModelStatus, ModelNotAvailableError,
     COMPRESSION_MODELS, TENSION_MODELS,
@@ -675,9 +676,143 @@ class TestQAFunctions(unittest.TestCase):
         self.assertTrue(len(errors) > 0)
 
 
+class TestC4YanEcAdapted(unittest.TestCase):
+    """Tests for C4_YAN_EC_ADAPTED (eps_c0 = alpha_a × fc / Ec)."""
+
+    def _make(self, batch_id, alpha_a=1.1, alpha_d=0.193):
+        return C4YanEcAdaptedCompression(BATCHES[batch_id], alpha_a=alpha_a, alpha_d=alpha_d)
+
+    def _make_lb(self, batch_id):
+        return C4YanEcAdaptedLB(BATCHES[batch_id])
+
+    def _make_ub(self, batch_id):
+        return C4YanEcAdaptedUB(BATCHES[batch_id])
+
+    # ── Status ──────────────────────────────────────────────────────────────
+    def test_lb_status_implemented(self):
+        self.assertEqual(C4YanEcAdaptedLB.STATUS, ModelStatus.IMPLEMENTED)
+
+    def test_ub_status_implemented(self):
+        self.assertEqual(C4YanEcAdaptedUB.STATUS, ModelStatus.IMPLEMENTED)
+
+    # ── eps_c0 formula ───────────────────────────────────────────────────────
+    def test_eps_c0_model_formula_all_batches(self):
+        for batch_id in (1, 2, 3):
+            for alpha_a in (1.100, 1.138):
+                m = self._make(batch_id, alpha_a=alpha_a)
+                fc = BATCHES[batch_id]["fc_mpa"]
+                Ec = BATCHES[batch_id]["Ec_mpa"]
+                expected = alpha_a * fc / Ec
+                self.assertAlmostEqual(m._eps_c0_model(), expected, places=10,
+                                       msg=f"B{batch_id} alpha_a={alpha_a}")
+
+    # ── Ascending first-row eps_in = 0 (Abaqus CDP requirement) ─────────────
+    def test_first_eps_in_zero_all_batches(self):
+        for batch_id in (1, 2, 3):
+            rows = self._make_lb(batch_id).generate_table()
+            self.assertAlmostEqual(rows[0]["inelastic_strain"], 0.0, places=8,
+                                   msg=f"B{batch_id} LB: first eps_in must be 0")
+
+    def test_first_eps_in_zero_ub_all_batches(self):
+        for batch_id in (1, 2, 3):
+            rows = self._make_ub(batch_id).generate_table()
+            self.assertAlmostEqual(rows[0]["inelastic_strain"], 0.0, places=8,
+                                   msg=f"B{batch_id} UB: first eps_in must be 0")
+
+    # ── eps_in ≥ 0 throughout (algebraic proof) ──────────────────────────────
+    def test_all_eps_in_nonnegative_lb(self):
+        for batch_id in (1, 2, 3):
+            rows = self._make_lb(batch_id).generate_table()
+            for i, r in enumerate(rows):
+                self.assertGreaterEqual(r["inelastic_strain"], 0.0,
+                                        msg=f"B{batch_id} LB row {i}: eps_in={r['inelastic_strain']:.2e} < 0")
+
+    def test_all_eps_in_nonnegative_ub(self):
+        for batch_id in (1, 2, 3):
+            rows = self._make_ub(batch_id).generate_table()
+            for i, r in enumerate(rows):
+                self.assertGreaterEqual(r["inelastic_strain"], 0.0,
+                                        msg=f"B{batch_id} UB row {i}: eps_in={r['inelastic_strain']:.2e} < 0")
+
+    # ── eps_in strictly monotone ──────────────────────────────────────────────
+    def test_monotone_eps_in_lb(self):
+        for batch_id in (1, 2, 3):
+            rows = self._make_lb(batch_id).generate_table()
+            for i in range(1, len(rows)):
+                self.assertGreater(rows[i]["inelastic_strain"], rows[i - 1]["inelastic_strain"],
+                                   msg=f"B{batch_id} LB row {i}: eps_in not strictly increasing")
+
+    def test_monotone_eps_in_ub(self):
+        for batch_id in (1, 2, 3):
+            rows = self._make_ub(batch_id).generate_table()
+            for i in range(1, len(rows)):
+                self.assertGreater(rows[i]["inelastic_strain"], rows[i - 1]["inelastic_strain"],
+                                   msg=f"B{batch_id} UB row {i}: eps_in not strictly increasing")
+
+    # ── Peak stress = fc (ascending top row) ─────────────────────────────────
+    def test_peak_stress_equals_fc_lb(self):
+        for batch_id in (1, 2, 3):
+            rows = self._make_lb(batch_id).generate_table()
+            fc = BATCHES[batch_id]["fc_mpa"]
+            # The last ascending row (row 25 of 25) should be sigma=fc
+            last_asc = rows[24]  # 0-indexed; ascending is rows 0..24 (n_asc=25)
+            self.assertAlmostEqual(last_asc["stress_mpa"], fc, delta=0.01,
+                                   msg=f"B{batch_id} LB: peak row sigma={last_asc['stress_mpa']:.3f} vs fc={fc}")
+
+    # ── All stresses positive ─────────────────────────────────────────────────
+    def test_all_stresses_positive_lb(self):
+        for batch_id in (1, 2, 3):
+            rows = self._make_lb(batch_id).generate_table()
+            for i, r in enumerate(rows):
+                self.assertGreater(r["stress_mpa"], 0.0,
+                                   msg=f"B{batch_id} LB row {i}: sigma={r['stress_mpa']:.4f} ≤ 0")
+
+    # ── Peak strain deviation ────────────────────────────────────────────────
+    def test_peak_strain_deviation_b1_lb(self):
+        dev = self._make_lb(1).peak_strain_deviation()
+        # B1: k=1.054, alpha_a=1.1 → dev = (1.1/1.054 - 1)*100 ≈ +4.4%
+        self.assertAlmostEqual(dev["dev_pct"], 4.4, delta=0.3,
+                               msg=f"B1 LB peak dev={dev['dev_pct']:.2f}%")
+        self.assertGreater(dev["eps_in_at_peak"], 0.0)
+
+    def test_peak_strain_deviation_b2_lb(self):
+        dev = self._make_lb(2).peak_strain_deviation()
+        # B2: k=0.988, alpha_a=1.1 → dev = (1.1/0.988 - 1)*100 ≈ +11.4%
+        self.assertAlmostEqual(dev["dev_pct"], 11.4, delta=0.5,
+                               msg=f"B2 LB peak dev={dev['dev_pct']:.2f}% (largest deviation)")
+        self.assertGreater(dev["eps_in_at_peak"], 0.0)
+
+    def test_peak_strain_deviation_b3_lb(self):
+        dev = self._make_lb(3).peak_strain_deviation()
+        # B3: k=1.091, alpha_a=1.1 → dev ≈ +0.8%
+        self.assertAlmostEqual(dev["dev_pct"], 0.8, delta=0.4,
+                               msg=f"B3 LB peak dev={dev['dev_pct']:.2f}%")
+
+    def test_peak_strain_deviation_b2_ub(self):
+        dev = self._make_ub(2).peak_strain_deviation()
+        # B2: k=0.988, alpha_a=1.138 → dev ≈ +15.2%
+        self.assertAlmostEqual(dev["dev_pct"], 15.2, delta=0.5,
+                               msg=f"B2 UB peak dev={dev['dev_pct']:.2f}%")
+
+    # ── QA passes (Abaqus CDP table validity) ────────────────────────────────
+    def test_qa_passes_all_batches_lb(self):
+        for batch_id in (1, 2, 3):
+            rows = self._make_lb(batch_id).generate_table()
+            errors = qa_compression(rows, BATCHES[batch_id]["Ec_mpa"])
+            self.assertEqual(errors, [],
+                             msg=f"B{batch_id} LB QA errors: {errors}")
+
+    def test_qa_passes_all_batches_ub(self):
+        for batch_id in (1, 2, 3):
+            rows = self._make_ub(batch_id).generate_table()
+            errors = qa_compression(rows, BATCHES[batch_id]["Ec_mpa"])
+            self.assertEqual(errors, [],
+                             msg=f"B{batch_id} UB QA errors: {errors}")
+
+
 class TestModelRegistryConsistency(unittest.TestCase):
     def test_compression_models_dict_has_all_keys(self):
-        for key in ("REF_POPOVICS", "C1", "C2", "C3", "C4"):
+        for key in ("REF_POPOVICS", "C1", "C2", "C3", "C4", "C4_ADAPTED_LB", "C4_ADAPTED_UB"):
             self.assertIn(key, COMPRESSION_MODELS)
 
     def test_tension_models_dict_has_all_keys(self):

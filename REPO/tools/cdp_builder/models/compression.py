@@ -652,14 +652,177 @@ class C4YanCompression(BaseModel):
         return results
 
 
+# ── C4 YAN EC-ADAPTED ────────────────────────────────────────────────────────
+
+class C4YanEcAdaptedCompression(BaseModel):
+    """
+    C4_YAN_EC_ADAPTED: Yan (2010) rational formula, eps_c0 ADAPTED for Ec-compatibility.
+
+    Source: Yan (2010) via Fakeh (2025) Table 3 [SECONDARY; original paper not in repo].
+    Engineering decision: set eps_c0_model = alpha_a × fc / Ec (not reported ecp).
+    → initial tangent = alpha_a × fc / eps_c0_model = Ec  (exact, by construction)
+    → eps_in ≥ 0 on entire ascending branch (proven analytically):
+        eps_in(eta) = (fc/Ec) × eta² × (alpha_a−1)² / (1+(alpha_a−2)×eta) ≥ 0  ∀ eta∈[0,1]
+        since (alpha_a−1)² > 0, numerator ≥ 0; denominator > 0 for alpha_a∈[1.1,1.138], eta∈[0,1]
+
+    Formulas (eta = eps / eps_c0_model):
+      Ascending  (0 ≤ eta ≤ 1): sigma = fc × (alpha_a×eta − eta²) / [1+(alpha_a−2)×eta]
+      Descending (eta ≥ 1):     sigma = fc × (alpha_d×eta) / [1+(alpha_d−2)×eta+eta²]
+      Continuity at peak: both branches give fc at eta=1; both have zero slope. ✓
+      eps_in at peak: (alpha_a−1) × fc / Ec  (positive, consistent ascending→descending)
+
+    Peak strain deviation from reported ecp:
+      eps_c0_model / ecp = alpha_a / k,  k = Ec×ecp/fc
+      B1 k=1.054: LB dev=+4.4%, UB dev=+8.1%
+      B2 k=0.988: LB dev=+11.4%, UB dev=+15.2%
+      B3 k=1.091: LB dev=+0.8%, UB dev=+4.3%
+
+    Note: This adaptation changes the peak strain. Report as ADAPTED throughout.
+    Do NOT change reported fc or Ec; do NOT use for holdout comparison without approval.
+    """
+    MODEL_ID = "C4_YAN_EC_ADAPTED"
+    STATUS = ModelStatus.IMPLEMENTED
+    SOURCE_PAPER = (
+        "Yan (2010) via Fakeh (2025) Table 3 [SECONDARY]; "
+        "eps_c0 ADAPTED: alpha_a × fc / Ec (not reported ecp)"
+    )
+    ALPHA_A_RANGE = (1.1, 1.138)
+    ALPHA_D_RANGE = (0.193, 0.312)
+
+    def __init__(self, batch_data, alpha_a=1.1, alpha_d=0.193, sigma_res_ratio=0.05):
+        self.b = batch_data
+        self.alpha_a = alpha_a
+        self.alpha_d = alpha_d
+        self.sigma_res_ratio = sigma_res_ratio
+
+    def _eps_c0_model(self):
+        """ADAPTED: eps_c0_model = alpha_a × fc / Ec.  Initial tangent = Ec exactly."""
+        return self.alpha_a * self.b["fc_mpa"] / self.b["Ec_mpa"]
+
+    def sigma_ascending(self, eps):
+        eps_c0 = self._eps_c0_model()
+        fc = self.b["fc_mpa"]
+        if eps <= 0:
+            return 0.0
+        eta = min(eps / eps_c0, 1.0)
+        aa = self.alpha_a
+        denom = 1.0 + (aa - 2.0) * eta
+        return fc * (aa * eta - eta ** 2) / denom
+
+    def sigma_descending(self, eps):
+        eps_c0 = self._eps_c0_model()
+        fc = self.b["fc_mpa"]
+        eta = max(eps / eps_c0, 1.0)
+        ad = self.alpha_d
+        denom = 1.0 + (ad - 2.0) * eta + eta ** 2
+        if abs(denom) < 1e-12:
+            return 0.0
+        return max(fc * ad * eta / denom, 0.0)
+
+    def generate_table(self, n_asc=25, n_desc=20):
+        eps_c0 = self._eps_c0_model()
+        fc = self.b["fc_mpa"]
+        Ec = self.b["Ec_mpa"]
+        aa = self.alpha_a
+        ad = self.alpha_d
+        sigma_res = self.sigma_res_ratio * fc
+        rows = []
+
+        # Ascending: n_asc rows from eta=1/n_asc to eta=1
+        # eps_in exact formula: (fc/Ec) × eta² × (aa-1)² / (1+(aa-2)×eta) ≥ 0
+        for i in range(1, n_asc + 1):
+            eta = i / n_asc
+            denom_a = 1.0 + (aa - 2.0) * eta
+            sigma = fc * (aa * eta - eta ** 2) / denom_a
+            eps_in = 0.0 if i == 1 else (fc / Ec) * eta ** 2 * (aa - 1.0) ** 2 / denom_a
+            rows.append({
+                "stress_mpa": round(sigma, 4),
+                "inelastic_strain": round(eps_in, 8),
+                "tag": "ADAPTED",
+            })
+
+        # Descending: binary-search eta_end where sigma = sigma_res, then distribute
+        eta_lo, eta_hi = 1.0, 8.0
+        for _ in range(55):
+            eta_mid = 0.5 * (eta_lo + eta_hi)
+            denom = 1.0 + (ad - 2.0) * eta_mid + eta_mid ** 2
+            s = fc * ad * eta_mid / denom if abs(denom) > 1e-12 else 0.0
+            if s > sigma_res:
+                eta_lo = eta_mid
+            else:
+                eta_hi = eta_mid
+        eta_end = 0.5 * (eta_lo + eta_hi)
+
+        for j in range(1, n_desc + 1):
+            eta = 1.0 + (eta_end - 1.0) * j / n_desc
+            denom_d = 1.0 + (ad - 2.0) * eta + eta ** 2
+            sigma = fc * ad * eta / denom_d if abs(denom_d) > 1e-12 else 0.0
+            if sigma <= 0:
+                break
+            eps_in = (aa * fc / Ec) * eta - sigma / Ec
+            rows.append({
+                "stress_mpa": round(sigma, 4),
+                "inelastic_strain": round(eps_in, 8),
+                "tag": "ADAPTED",
+            })
+
+        # Belt-and-suspenders: enforce strict monotone eps_in
+        cleaned = []
+        prev = -1.0
+        for row in rows:
+            if row["stress_mpa"] <= 0:
+                continue
+            ei = row["inelastic_strain"]
+            if ei <= prev:
+                ei = prev + 1e-8
+                row = dict(row, inelastic_strain=round(ei, 8))
+            cleaned.append(row)
+            prev = ei
+        return cleaned
+
+    def peak_strain_deviation(self):
+        """Deviation of adapted eps_c0 from reported ecp."""
+        eps_c0_model = self._eps_c0_model()
+        ecp_rep = self.b["ecp"]
+        k = self.b["Ec_mpa"] * ecp_rep / self.b["fc_mpa"]
+        return {
+            "eps_c0_model": round(eps_c0_model, 7),
+            "ecp_reported": ecp_rep,
+            "dev_pct": round(100.0 * (eps_c0_model - ecp_rep) / ecp_rep, 2),
+            "k": round(k, 6),
+            "alpha_a": self.alpha_a,
+            "alpha_d": self.alpha_d,
+            "eps_in_at_peak": round((self.alpha_a - 1.0) * self.b["fc_mpa"] / self.b["Ec_mpa"], 8),
+            "tag": "ADAPTED: eps_c0_model = alpha_a × fc / Ec; not reported ecp",
+        }
+
+
+class C4YanEcAdaptedLB(C4YanEcAdaptedCompression):
+    """C4 Yan Ec-adapted, lower bound: alpha_a=1.100, alpha_d=0.193."""
+    MODEL_ID = "C4_ADAPTED_LB"
+
+    def __init__(self, batch_data):
+        super().__init__(batch_data, alpha_a=1.100, alpha_d=0.193)
+
+
+class C4YanEcAdaptedUB(C4YanEcAdaptedCompression):
+    """C4 Yan Ec-adapted, upper bound: alpha_a=1.138, alpha_d=0.312."""
+    MODEL_ID = "C4_ADAPTED_UB"
+
+    def __init__(self, batch_data):
+        super().__init__(batch_data, alpha_a=1.138, alpha_d=0.312)
+
+
 # ── MODEL REGISTRY ───────────────────────────────────────────────────────────
 
 COMPRESSION_MODELS = {
     "REF_POPOVICS": PopovicsCompression,
     "C1": C1GraybealFakehCompression,
     "C2": C2ZhaoCompression,
-    "C3": C3WangCompression,
-    "C4": C4YanCompression,
+    "C3": C3WangCompression,          # BLOCKED (CDP); raw σ–ε curves available
+    "C4": C4YanCompression,            # BLOCKED (CDP); original ecp, raw curves available
+    "C4_ADAPTED_LB": C4YanEcAdaptedLB,  # IMPLEMENTED; eps_c0 ADAPTED alpha_a=1.1
+    "C4_ADAPTED_UB": C4YanEcAdaptedUB,  # IMPLEMENTED; eps_c0 ADAPTED alpha_a=1.138
 }
 
 # Convenience factory aliases (backward-compatible)
@@ -667,3 +830,5 @@ def C1_STUB(batch_data): return C1GraybealFakehCompression(batch_data)
 def C2_STUB(batch_data): return C2ZhaoCompression(batch_data)
 def C3_STUB(batch_data): return C3WangCompression(batch_data)
 def C4_STUB(batch_data): return C4YanCompression(batch_data)
+def C4_ADAPTED_LB_STUB(batch_data): return C4YanEcAdaptedLB(batch_data)
+def C4_ADAPTED_UB_STUB(batch_data): return C4YanEcAdaptedUB(batch_data)

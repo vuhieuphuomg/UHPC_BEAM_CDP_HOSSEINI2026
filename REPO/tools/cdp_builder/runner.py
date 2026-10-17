@@ -188,6 +188,16 @@ def run(project_root):
                     "CHANGELOG C-001: eps_in,peak clipped from -3.9e-5 → 0 "
                     "(FE approximation, 1.2% deviation, within scatter)."
                 )
+            # C4_ADAPTED peak strain deviation
+            if hasattr(inst, "peak_strain_deviation"):
+                dev = inst.peak_strain_deviation()
+                result["notes"].append(
+                    f"ADAPTED eps_c0: {dev['eps_c0_model']:.6f} "
+                    f"vs ecp_rep={dev['ecp_reported']:.5f} "
+                    f"({dev['dev_pct']:+.1f}%); "
+                    f"k={dev['k']:.4f}; eps_in_peak={dev['eps_in_at_peak']:.2e}; "
+                    f"αa={dev['alpha_a']} αd={dev['alpha_d']} [SECONDARY source]"
+                )
 
             results.append(result)
 
@@ -368,6 +378,21 @@ def _write_report(results, report_path, project_root):
         "**Fiber dimensions ASSUMED:** l=13mm, df=0.2mm (not in Hosseini 2026).",
         "C1 post-peak slope M and T1 λf-based formulas use ASSUMED fiber dimensions.",
         "Confirm fiber specifications before using C1 post-peak for structural analysis.",
+        "",
+        "### C4_YAN_EC_ADAPTED — peak strain deviation from reported ecp",
+        "",
+        "eps_c0_model = αa × fc / Ec (ADAPTED; initial tangent = Ec exactly by construction).  ",
+        "Deviation from reported ecp: ratio = αa / k  where k = Ec × ecp / fc.",
+        "",
+        "| Batch | fc (MPa) | Ec (MPa) | ecp (rep.) | k | αa=1.100: eps_c0 | dev% | αa=1.138: eps_c0 | dev% |",
+        "|-------|---------|---------|-----------|---|----------------|------|----------------|------|",
+        "| B1 | 152.8 | 46000 | 0.0035 | 1.054 | 0.003652 | +4.3% | 0.003782 | +8.1% |",
+        "| B2 | 153.2 | 47300 | 0.0032 | 0.988 | 0.003565 | +11.4% | 0.003687 | +15.2% |",
+        "| B3 | 166.4 | 45400 | 0.0040 | 1.091 | 0.004028 | +0.7% | 0.004172 | +4.3% |",
+        "",
+        "**C3 Wang — excluded from Abaqus FE matrix (theoretical reference only).**  ",
+        "Engineering decision 2026-10-17: C3 Wang not compatible with Ec_reported for Abaqus CDP.",
+        "Raw σ–ε curves retained for comparison. Requires expert decision before FE inclusion.",
         "",
         "---",
         "",
