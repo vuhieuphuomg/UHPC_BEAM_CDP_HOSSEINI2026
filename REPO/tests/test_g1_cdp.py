@@ -22,6 +22,7 @@ from cdp_builder.batch_data import (
 from cdp_builder.models import (
     PopovicsCompression, BilinearTensionHardening,
     C1GraybealFakehCompression, C2ZhaoCompression,
+    C3WangCompression, C4YanCompression,
     T1TianFakehTension, T2ZhaoTension,
     ModelStatus, ModelNotAvailableError,
     COMPRESSION_MODELS, TENSION_MODELS,
@@ -268,33 +269,181 @@ class TestC2Zhao(unittest.TestCase):
 
 
 class TestC3C4Blocked(unittest.TestCase):
+    """CDP table generation BLOCKED; raw curve methods must work."""
+
+    # ── Status and CDP-table blocking ──────────────────────────────────────────
+
     def test_c3_status_is_blocked(self):
-        cls = COMPRESSION_MODELS["C3"]
-        self.assertEqual(cls.STATUS, ModelStatus.BLOCKED)
+        self.assertEqual(C3WangCompression.STATUS, ModelStatus.BLOCKED)
 
     def test_c4_status_is_blocked(self):
-        cls = COMPRESSION_MODELS["C4"]
-        self.assertEqual(cls.STATUS, ModelStatus.BLOCKED)
+        self.assertEqual(C4YanCompression.STATUS, ModelStatus.BLOCKED)
 
     def test_c3_raises_on_generate(self):
-        cls = COMPRESSION_MODELS["C3"]
-        inst = cls(BATCHES[1])
-        with self.assertRaises(ModelNotAvailableError):
-            inst.generate_table()
+        for batch_id in (1, 2, 3):
+            inst = C3WangCompression(BATCHES[batch_id])
+            with self.assertRaises(ModelNotAvailableError,
+                                   msg=f"C3 Batch {batch_id} should raise"):
+                inst.generate_table()
 
     def test_c4_raises_on_generate(self):
-        cls = COMPRESSION_MODELS["C4"]
-        inst = cls(BATCHES[1])
-        with self.assertRaises(ModelNotAvailableError):
-            inst.generate_table()
+        for batch_id in (1, 2, 3):
+            inst = C4YanCompression(BATCHES[batch_id])
+            with self.assertRaises(ModelNotAvailableError,
+                                   msg=f"C4 Batch {batch_id} should raise"):
+                inst.generate_table()
 
-    def test_c3_blocked_reason_mentions_ascending(self):
-        cls = COMPRESSION_MODELS["C3"]
-        self.assertIn("ascending", cls.BLOCKED_REASON.lower())
+    # ── C3 Wang source equations ───────────────────────────────────────────────
 
-    def test_c4_blocked_reason_mentions_alpha_a(self):
-        cls = COMPRESSION_MODELS["C4"]
-        self.assertIn("alpha", cls.BLOCKED_REASON.lower())
+    def test_c3_eps0_wang_formula(self):
+        """Wang Eq.(7) ε0 should differ from reported ecp (different formula)."""
+        for batch_id, expected_eps0_approx in [(1, 0.00343), (2, 0.00344), (3, 0.00356)]:
+            inst = C3WangCompression(BATCHES[batch_id])
+            eps0 = inst._eps0_wang()
+            self.assertAlmostEqual(eps0, expected_eps0_approx, delta=0.00005,
+                                   msg=f"C3 Batch {batch_id}: ε0_Wang={eps0:.5f}")
+
+    def test_c3_eps20_exceeds_eps0(self):
+        """ε20 > ε0 required for descending branch to be valid."""
+        for batch_id in (1, 2, 3):
+            inst = C3WangCompression(BATCHES[batch_id])
+            self.assertGreater(inst._eps20_wang(), inst._eps0_wang(),
+                               msg=f"C3 Batch {batch_id}: ε20 must exceed ε0")
+
+    def test_c3_eps20_values_approx(self):
+        """Wang Eq.(10)-(11) ε20 values. Handover file: B1≈0.00735, B2≈0.00731, B3≈0.00804."""
+        expected = {1: 0.00735, 2: 0.00731, 3: 0.00804}
+        for batch_id, exp in expected.items():
+            inst = C3WangCompression(BATCHES[batch_id])
+            eps20 = inst._eps20_wang()
+            self.assertAlmostEqual(eps20, exp, delta=0.0001,
+                                   msg=f"C3 Batch {batch_id}: ε20={eps20:.5f}, expected≈{exp}")
+
+    def test_c3_sigma_at_peak(self):
+        """σ(ε0) = f_peak (= fc_reported for ADAPTED variant)."""
+        for batch_id in (1, 2, 3):
+            inst = C3WangCompression(BATCHES[batch_id])
+            sigma_peak = inst.sigma(inst._eps0_wang())
+            fc = BATCHES[batch_id]["fc_mpa"]
+            self.assertAlmostEqual(sigma_peak, fc, places=3,
+                                   msg=f"C3 Batch {batch_id}: σ(ε0)={sigma_peak:.2f} ≠ fc={fc}")
+
+    def test_c3_sigma_residual(self):
+        """σ(ε >> ε20) = λrs × f_peak = 0.30 × fc."""
+        for batch_id in (1, 2, 3):
+            inst = C3WangCompression(BATCHES[batch_id])
+            sigma_res = inst.sigma(inst._eps20_wang() * 2.0)
+            fc = BATCHES[batch_id]["fc_mpa"]
+            self.assertAlmostEqual(sigma_res, 0.30 * fc, places=3,
+                                   msg=f"C3 Batch {batch_id}: residual σ={sigma_res:.2f}")
+
+    def test_c3_raw_curve_structure(self):
+        """raw_sigma_eps_curve returns non-empty list with required keys."""
+        for batch_id in (1, 2, 3):
+            pts = C3WangCompression(BATCHES[batch_id]).raw_sigma_eps_curve()
+            self.assertGreater(len(pts), 10, msg=f"C3 Batch {batch_id}: too few points")
+            required = {"eps_total", "sigma_mpa", "eta", "eps_in", "branch", "tag"}
+            for k in required:
+                self.assertIn(k, pts[0], msg=f"Missing key: {k}")
+
+    def test_c3_eps_in_analysis_b1(self):
+        """B1: α_Wang>1 → η_cross<1; ~96.6% of ascending has εin<0."""
+        an = C3WangCompression(BATCHES[1]).eps_in_analysis()
+        self.assertGreater(an["alpha_wang"], 1.0, "B1 alpha_wang should be > 1")
+        self.assertGreater(an["pct_ascending_negative"], 90.0,
+                           f"B1: {an['pct_ascending_negative']:.1f}% expected >90%")
+        self.assertLess(an["eta_crossover"], 1.0, "B1 crossover within ascending range")
+
+    def test_c3_eps_in_analysis_b2(self):
+        """B2: α_Wang>1 → ~93.9% negative."""
+        an = C3WangCompression(BATCHES[2]).eps_in_analysis()
+        self.assertGreater(an["alpha_wang"], 1.0)
+        self.assertGreater(an["pct_ascending_negative"], 88.0,
+                           f"B2: {an['pct_ascending_negative']:.1f}%")
+
+    def test_c3_eps_in_analysis_b3_all_negative(self):
+        """B3: α_Wang<1 → η_cross>1 → entire ascending has εin<0 (100%)."""
+        an = C3WangCompression(BATCHES[3]).eps_in_analysis()
+        self.assertAlmostEqual(an["pct_ascending_negative"], 100.0, delta=0.5,
+                               msg=f"B3: {an['pct_ascending_negative']:.1f}% expected=100%")
+        self.assertGreater(an["eta_crossover"], 1.0, "B3: crossover beyond ascending range")
+
+    # ── C4 Yan source equations ────────────────────────────────────────────────
+
+    def test_c4_ascending_peak_equals_fc(self):
+        """σ_ascending(εc0) = fc for both αa bounds."""
+        for batch_id in (1, 2, 3):
+            inst = C4YanCompression(BATCHES[batch_id])
+            fc = BATCHES[batch_id]["fc_mpa"]
+            ecp = BATCHES[batch_id]["ecp"]
+            for aa in inst.ALPHA_A_RANGE:
+                sigma = inst.sigma_ascending(ecp, aa)
+                self.assertAlmostEqual(sigma, fc, places=3,
+                                       msg=f"C4 Batch {batch_id} αa={aa}: σ(εc0)={sigma:.2f}")
+
+    def test_c4_descending_peak_equals_fc(self):
+        """σ_descending(εc0) = fc for both αd bounds."""
+        for batch_id in (1, 2, 3):
+            inst = C4YanCompression(BATCHES[batch_id])
+            fc = BATCHES[batch_id]["fc_mpa"]
+            ecp = BATCHES[batch_id]["ecp"]
+            for ad in inst.ALPHA_D_RANGE:
+                sigma = inst.sigma_descending(ecp, ad)
+                self.assertAlmostEqual(sigma, fc, places=3,
+                                       msg=f"C4 Batch {batch_id} αd={ad}: σ(εc0)={sigma:.2f}")
+
+    def test_c4_descending_decays(self):
+        """Descending branch σ decreases after η=1."""
+        for batch_id in (1, 2, 3):
+            inst = C4YanCompression(BATCHES[batch_id])
+            ecp = BATCHES[batch_id]["ecp"]
+            for ad in inst.ALPHA_D_RANGE:
+                s1 = inst.sigma_descending(ecp * 1.5, ad)
+                s2 = inst.sigma_descending(ecp * 3.0, ad)
+                self.assertGreater(s1, s2,
+                                   msg=f"C4 Batch {batch_id} αd={ad}: descending must decay")
+
+    def test_c4_raw_curve_structure(self):
+        """raw_sigma_eps_curve returns well-formed list."""
+        for batch_id in (1, 2, 3):
+            inst = C4YanCompression(BATCHES[batch_id])
+            pts = inst.raw_sigma_eps_curve(alpha_a=1.1, alpha_d=0.193)
+            self.assertGreater(len(pts), 10)
+            required = {"eps_total", "sigma_mpa", "eta", "eps_in", "branch", "tag"}
+            for k in required:
+                self.assertIn(k, pts[0])
+
+    def test_c4_eps_in_analysis_b1_alpha_11(self):
+        """B1 with αa=1.1: η_cross≈0.895 → ~89.6% negative."""
+        an = C4YanCompression(BATCHES[1]).eps_in_analysis([1.1])
+        pct = an[1.1]["pct_ascending_negative"]
+        self.assertAlmostEqual(pct, 89.6, delta=1.0,
+                               msg=f"B1 αa=1.1: {pct:.1f}% expected≈89.6%")
+
+    def test_c4_eps_in_analysis_b2_alpha_11_all_negative(self):
+        """B2 with αa=1.1: k<αa and η_cross>1 → entire ascending negative."""
+        an = C4YanCompression(BATCHES[2]).eps_in_analysis([1.1])
+        pct = an[1.1]["pct_ascending_negative"]
+        self.assertAlmostEqual(pct, 100.0, delta=1.0,
+                               msg=f"B2 αa=1.1: {pct:.1f}% expected=100%")
+
+    def test_c4_eps_in_analysis_b3_alpha_11(self):
+        """B3 with αa=1.1: k≈1.091; η_cross≈0.489 → ~48.9% negative."""
+        an = C4YanCompression(BATCHES[3]).eps_in_analysis([1.1])
+        pct = an[1.1]["pct_ascending_negative"]
+        self.assertAlmostEqual(pct, 48.9, delta=2.0,
+                               msg=f"B3 αa=1.1: {pct:.1f}% expected≈48.9%")
+
+    def test_c4_initial_tangent_exceeds_ec(self):
+        """Initial tangent αa×fc/εc0 > Ec for all batches and αa bounds."""
+        for batch_id in (1, 2, 3):
+            b = BATCHES[batch_id]
+            Ec = b["Ec_mpa"]
+            inst = C4YanCompression(b)
+            for aa in inst.ALPHA_A_RANGE:
+                tangent = aa * b["fc_mpa"] / b["ecp"]
+                self.assertGreater(tangent, Ec,
+                                   msg=f"C4 Batch {batch_id} αa={aa}: tangent={tangent:.0f} must > Ec={Ec}")
 
 
 class TestBilinearTension(unittest.TestCase):

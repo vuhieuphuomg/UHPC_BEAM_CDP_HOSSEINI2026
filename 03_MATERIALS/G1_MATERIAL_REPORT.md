@@ -20,18 +20,18 @@
 | 1 | REF_POPOVICS | IMPLEMENTED_REFERENCE | `03_MATERIALS\tables\B1_REF_POPOVICS_compression.csv` | PASS | Post-peak branch (15 pts) is ADOPTED (C1: Fakeh Eq.9 M=7061.5×λf^-0.411 with ASSUMED fiber dims l=13mm df=0.2mm; REF_POPOVICS: linear descent placeholder). |
 | 1 | C1 | IMPLEMENTED | `03_MATERIALS\tables\B1_C1_compression.csv` | PASS | Post-peak branch (15 pts) is ADOPTED (C1: Fakeh Eq.9 M=7061.5×λf^-0.411 with ASSUMED fiber dims l=13mm df=0.2mm; REF_POPOVICS: linear descent placeholder). |
 | 1 | C2 | IMPLEMENTED | `03_MATERIALS\tables\B1_C2_compression.csv` | PASS | — |
-| 1 | C3 | BLOCKED | — | PASS | BLOCKED: Ascending parabolic model (initial slope = 2f'c/εc0 >> Ec) gives negative εin for >50% of ascending branch in all 3 batches. Additionally, parameter ε20 (descending endpoint) not defined in Fakeh (2025) Table 3 — requires Wang (2016) original paper. |
-| 1 | C4 | BLOCKED | — | PASS | BLOCKED: Yan ascending αa=1.1–1.138 > alpha≈0.988–1.091 for all batches. εin < 0 for 81–92% of the ascending branch. Additionally αa and αd given as ranges only; Yan (2010) paper not in sources. |
+| 1 | C3 | BLOCKED | — | PASS | BLOCKED: Ascending parabolic model (initial slope = 2×f_peak/ε0 >> Ec). εin = ε − σ/Ec < 0 for ~94–100% of ascending branch in all 3 batches (Wang Eq.7 ε0; B1:~96.6%, B2:~93.9%, B3:100%). Expert engineering decision required before generating CDP table. A rewritten ascending branch is a different hybrid law — use new model ID.; εin analysis: α_Wang=1.0331; η_cross=0.9669; εin<0 on 96.7% of ascending; εin_peak=1.10e-04; ε0_Wang=0.00343; ε20=0.00735 |
+| 1 | C4 | BLOCKED | — | PASS | BLOCKED: Ascending rational formula: initial tangent αa×fc/εc0 > Ec for all batches (αa ∈ [1.1,1.138]; k=Ec×εcp/fc ≈ 0.988–1.091). εin < 0 for ~49–100% of ascending branch (batch/αa-dependent). αa, αd are parameter ranges only from secondary source (Fakeh Table 3); no unique calibration for Hosseini batches without Yan (2010) original paper.; εin<0 on ascending: αa=1.1: 89.6%; αa=1.138: 91.9% (k=Ec×εcp/fc=1.0537) |
 | 2 | REF_POPOVICS | DEGENERATE | — | PASS | DEGENERATE: alpha = Ec*ecp/fc = 0.9880 <= 1.0; Popovics model invalid for Batch 2. Use C1-C4 (REVIEW_REQUIRED) instead. |
 | 2 | C1 | IMPLEMENTED | `03_MATERIALS\tables\B2_C1_compression.csv` | PASS | Post-peak branch (15 pts) is ADOPTED (C1: Fakeh Eq.9 M=7061.5×λf^-0.411 with ASSUMED fiber dims l=13mm df=0.2mm; REF_POPOVICS: linear descent placeholder).; CHANGELOG C-001: eps_in,peak clipped from -3.9e-5 → 0 (FE approximation, 1.2% deviation, within scatter). |
 | 2 | C2 | IMPLEMENTED | `03_MATERIALS\tables\B2_C2_compression.csv` | PASS | CHANGELOG C-001: eps_in,peak clipped from -3.9e-5 → 0 (FE approximation, 1.2% deviation, within scatter). |
-| 2 | C3 | BLOCKED | — | PASS | BLOCKED: Ascending parabolic model (initial slope = 2f'c/εc0 >> Ec) gives negative εin for >50% of ascending branch in all 3 batches. Additionally, parameter ε20 (descending endpoint) not defined in Fakeh (2025) Table 3 — requires Wang (2016) original paper. |
-| 2 | C4 | BLOCKED | — | PASS | BLOCKED: Yan ascending αa=1.1–1.138 > alpha≈0.988–1.091 for all batches. εin < 0 for 81–92% of the ascending branch. Additionally αa and αd given as ranges only; Yan (2010) paper not in sources. |
+| 2 | C3 | BLOCKED | — | PASS | BLOCKED: Ascending parabolic model (initial slope = 2×f_peak/ε0 >> Ec). εin = ε − σ/Ec < 0 for ~94–100% of ascending branch in all 3 batches (Wang Eq.7 ε0; B1:~96.6%, B2:~93.9%, B3:100%). Expert engineering decision required before generating CDP table. A rewritten ascending branch is a different hybrid law — use new model ID.; εin analysis: α_Wang=1.0607; η_cross=0.9393; εin<0 on 93.9% of ascending; εin_peak=1.97e-04; ε0_Wang=0.00344; ε20=0.00731 |
+| 2 | C4 | BLOCKED | — | PASS | BLOCKED: Ascending rational formula: initial tangent αa×fc/εc0 > Ec for all batches (αa ∈ [1.1,1.138]; k=Ec×εcp/fc ≈ 0.988–1.091). εin < 0 for ~49–100% of ascending branch (batch/αa-dependent). αa, αd are parameter ranges only from secondary source (Fakeh Table 3); no unique calibration for Hosseini batches without Yan (2010) original paper.; εin<0 on ascending: αa=1.1: 100.0%; αa=1.138: 100.0% (k=Ec×εcp/fc=0.9880) |
 | 3 | REF_POPOVICS | IMPLEMENTED_REFERENCE | `03_MATERIALS\tables\B3_REF_POPOVICS_compression.csv` | PASS | Post-peak branch (15 pts) is ADOPTED (C1: Fakeh Eq.9 M=7061.5×λf^-0.411 with ASSUMED fiber dims l=13mm df=0.2mm; REF_POPOVICS: linear descent placeholder). |
 | 3 | C1 | IMPLEMENTED | `03_MATERIALS\tables\B3_C1_compression.csv` | PASS | Post-peak branch (15 pts) is ADOPTED (C1: Fakeh Eq.9 M=7061.5×λf^-0.411 with ASSUMED fiber dims l=13mm df=0.2mm; REF_POPOVICS: linear descent placeholder). |
 | 3 | C2 | IMPLEMENTED | `03_MATERIALS\tables\B3_C2_compression.csv` | PASS | — |
-| 3 | C3 | BLOCKED | — | PASS | BLOCKED: Ascending parabolic model (initial slope = 2f'c/εc0 >> Ec) gives negative εin for >50% of ascending branch in all 3 batches. Additionally, parameter ε20 (descending endpoint) not defined in Fakeh (2025) Table 3 — requires Wang (2016) original paper. |
-| 3 | C4 | BLOCKED | — | PASS | BLOCKED: Yan ascending αa=1.1–1.138 > alpha≈0.988–1.091 for all batches. εin < 0 for 81–92% of the ascending branch. Additionally αa and αd given as ranges only; Yan (2010) paper not in sources. |
+| 3 | C3 | BLOCKED | — | PASS | BLOCKED: Ascending parabolic model (initial slope = 2×f_peak/ε0 >> Ec). εin = ε − σ/Ec < 0 for ~94–100% of ascending branch in all 3 batches (Wang Eq.7 ε0; B1:~96.6%, B2:~93.9%, B3:100%). Expert engineering decision required before generating CDP table. A rewritten ascending branch is a different hybrid law — use new model ID.; εin analysis: α_Wang=0.9713; η_cross=1.0287; εin<0 on 100.0% of ascending; εin_peak=-1.05e-04; ε0_Wang=0.00356; ε20=0.00804 |
+| 3 | C4 | BLOCKED | — | PASS | BLOCKED: Ascending rational formula: initial tangent αa×fc/εc0 > Ec for all batches (αa ∈ [1.1,1.138]; k=Ec×εcp/fc ≈ 0.988–1.091). εin < 0 for ~49–100% of ascending branch (batch/αa-dependent). αa, αd are parameter ranges only from secondary source (Fakeh Table 3); no unique calibration for Hosseini batches without Yan (2010) original paper.; εin<0 on ascending: αa=1.1: 48.6%; αa=1.138: 78.7% (k=Ec×εcp/fc=1.0913) |
 
 ## Tension tables
 
@@ -51,12 +51,12 @@
 
 ## Blockers
 
-### BLOCKED models (equations available; technical/data issue prevents valid table)
+### BLOCKED models (source equations available; raw σ–ε plots generated; CDP table blocked)
 
-| Model | Blocker | Resolution required |
-|-------|---------|---------------------|
-| C3 | Ascending parabolic: initial slope 2f'c/εc0 >> Ec → εin < 0 for >50% of ascending (all batches). ε20 unknown. | Expert engineering decision + Wang (2016) paper |
-| C4 | αa=1.1–1.138 > alpha≈0.988–1.091 → εin < 0 for 81–92% of ascending. αa/αd ranges only. | Expert engineering decision + Yan (2010) paper |
+| Model | Source | Blocker summary | εin<0 on ascending | Resolution |
+|-------|--------|-----------------|---------------------|------------|
+| C3 | Wang (2016) Adv Mech Eng 8(2) — PRIMARY ✓ | Initial slope 2×fp/ε0 >> Ec (Wang Eq.7 ε0). ε20 from Eq.10-11 resolved. | B1:~96.6%, B2:~93.9%, B3:100% | Expert decision on ascending branch hybrid law |
+| C4 | Yan (2010) via Fakeh (2025) Table 3 — SECONDARY | αa∈[1.1,1.138] > k≈0.988–1.091 for all batches. αa/αd are ranges only. | αa=1.1: B1:89.6%, B2:100%, B3:48.9%; αa=1.138: B1:91.9%, B2:100%, B3:78.8% | Yan (2010) original paper + engineering decision |
 
 ### BLOCKED softening (hardening tables generated; post-peak unavailable)
 

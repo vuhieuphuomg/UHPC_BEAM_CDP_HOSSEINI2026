@@ -13,11 +13,15 @@ IMPLEMENTED (named project models):
       Source: Fakeh et al. (2025) Table 3.
       εc0_model = fc/Ec (model-derived, may differ from reported ecp).
 
-BLOCKED (equations in Fakeh Table 3 but cannot generate valid εin table):
-  C3  Wang et al. (2016) — ascending parabolic, initial slope = 2fc/εc0 >> Ec
-      → εin < 0 for >50% of ascending (systematic, cannot clip); ε20 unknown.
-  C4  Yan (2010) — αa=1.1–1.138 > alpha≈0.99–1.09 for all batches
-      → εin < 0 for 78–90% of ascending; αa/αd exact values need Yan 2010 paper.
+BLOCKED for CDP table (raw σ–ε curves available for comparison):
+  C3  Wang et al. (2016) — ascending parabolic. ε0 from Wang Eq.(7); ε20 from Eq.(10)-(11).
+      Initial slope = 2×f_peak/ε0 >> Ec → εin < 0 for ~94–100% of ascending (all batches).
+      Source: Wang et al. (2016) Adv Mech Eng 8(2):1687814016633411 (primary).
+      Use raw_sigma_eps_curve() / eps_in_analysis() for diagnostic comparison.
+  C4  Yan (2010) via Fakeh (2025) — rational formula ascending/descending.
+      αa ∈ [1.1, 1.138] > k = Ec×εcp/fc ≈ 0.988–1.091 → εin < 0 for ~49–100% of ascending.
+      αa/αd given as ranges only (secondary source); no Yan (2010) original in repo.
+      Use raw_sigma_eps_curve(alpha_a, alpha_d) for diagnostic comparison.
 """
 
 import math
@@ -378,71 +382,274 @@ class C2ZhaoCompression(BaseModel):
         }
 
 
-# ── C3 WANG — BLOCKED ────────────────────────────────────────────────────────
+# ── C3 WANG 2016 ─────────────────────────────────────────────────────────────
 
-class _C3WangBlocked(BaseModel):
+class C3WangCompression(BaseModel):
     """
-    C3: Wang et al. (2016) — BLOCKED.
+    C3: Wang et al. (2016) — source equations implemented; CDP TABLE BLOCKED.
 
-    BLOCKER 1 — Negative ascending εin (systematic):
-      Ascending: σ = f'c × [2η − η²], η = ε/εc0.
-      Initial slope dσ/dε|0 = 2f'c/εc0. For all 3 batches, 2f'c/εc0 >> Ec:
-        Batch 1: 2×152.8/0.0035 = 87314 MPa >> Ec=46000 → εin < 0 for η < 0.526
-        Batch 2: 2×153.2/0.0032 = 95750 MPa >> Ec=47300 → εin < 0 for η < 0.507
-        Batch 3: 2×166.4/0.004  = 83200 MPa >> Ec=45400 → εin < 0 for η < 0.546
-      Negative εin spans >50% of ascending — NOT clippable without expert approval.
+    Source: Wang et al. (2016) Adv Mech Eng 8(2):1687814016633411, Eqs.(3)–(11).
 
-    BLOCKER 2 — Missing parameter ε20:
-      Descending: σ = f'c × [1 − (1−λrs)×(ε−εc0)/(ε20−εc0)], λrs=0.3
-      ε20 not defined in Fakeh (2025) Table 3. Requires Wang (2016) original paper.
+    Equations (ADAPTED: f_peak = fc_reported; Wang Eq.4 lambda_sh NOT applied):
+      Ascending  (η = ε/ε0, 0 ≤ η ≤ 1):  σ = f_peak × (2η − η²)
+      Descending (ε0 < ε < ε20):           σ = f_peak × [1 − (1−λrs)×(ε−ε0)/(ε20−ε0)]
+      Residual   (ε ≥ ε20):                σ = λrs × f_peak  (λrs = 0.30)
+      ε0 from Wang Eq.(7): ε0_µε = 0.5×[1950 + 14.6×fp + 763×fp^0.25]; ε0 = ε0_µε×1e-6
+      ε20 from Wang Eq.(10)-(11): ε20 = (0.65−λrs)×fp/10300 + 0.65×fp/Ec
 
-    Resolution: Obtain Wang (2016) paper + expert engineering decision on ascending εin.
+    CDP BLOCKER — Ascending εin < 0 (systematic):
+      Initial slope = 2×f_peak/ε0 >> Ec for all batches.
+      εin = ε − σ/Ec = ε0×η − (f_peak/Ec)×(2η−η²)
+      Crossover η_cross = 2 − alpha_wang, where alpha_wang = Ec×ε0/f_peak.
+      B1: alpha_wang≈1.034 → η_cross≈0.966 → εin < 0 for ~96.6% of ascending.
+      B2: alpha_wang≈1.061 → η_cross≈0.939 → εin < 0 for ~93.9% of ascending.
+      B3: alpha_wang≈0.971 → η_cross≈1.029 > 1 → εin < 0 for entire ascending (100%).
+      Cannot generate valid Abaqus CDP table without engineering decision.
+      Use raw_sigma_eps_curve() and eps_in_analysis() for diagnostic comparison.
     """
     MODEL_ID = "C3"
     STATUS = ModelStatus.BLOCKED
-    SOURCE_PAPER = "Wang et al. (2016) — ascending εin negative, ε20 unknown"
+    SOURCE_PAPER = "Wang et al. (2016) Adv Mech Eng 8(2):1687814016633411"
     BLOCKED_REASON = (
-        "Ascending parabolic model (initial slope = 2f'c/εc0 >> Ec) gives "
-        "negative εin for >50% of ascending branch in all 3 batches. "
-        "Additionally, parameter ε20 (descending endpoint) not defined in "
-        "Fakeh (2025) Table 3 — requires Wang (2016) original paper."
+        "Ascending parabolic model (initial slope = 2×f_peak/ε0 >> Ec). "
+        "εin = ε − σ/Ec < 0 for ~94–100% of ascending branch in all 3 batches "
+        "(Wang Eq.7 ε0; B1:~96.6%, B2:~93.9%, B3:100%). "
+        "Expert engineering decision required before generating CDP table. "
+        "A rewritten ascending branch is a different hybrid law — use new model ID."
     )
+    _lambda_rs = 0.30
 
-    def __init__(self, _batch_data):
-        pass
+    def __init__(self, batch_data):
+        self.b = batch_data
+
+    def _f_peak(self):
+        """ADAPTED: use reported fc; Wang Eq.4 lambda_sh NOT applied."""
+        return self.b["fc_mpa"]
+
+    def _eps0_wang(self):
+        """Wang Eq.(7) peak strain [dimensionless]. f_peak in MPa."""
+        fp = self._f_peak()
+        microstrain = 0.5 * (1950.0 + 14.6 * fp + 763.0 * (fp ** 0.25))
+        return microstrain * 1e-6
+
+    def _eps20_wang(self):
+        """Wang Eq.(10)-(11) residual-onset strain [dimensionless]."""
+        fp = self._f_peak()
+        Ec = self.b["Ec_mpa"]
+        return (0.65 - self._lambda_rs) * fp / 10300.0 + 0.65 * fp / Ec
+
+    def sigma(self, eps):
+        """Wang piecewise σ(ε). Returns stress in MPa."""
+        eps0 = self._eps0_wang()
+        eps20 = self._eps20_wang()
+        fp = self._f_peak()
+        if eps <= 0:
+            return 0.0
+        if eps <= eps0:
+            eta = eps / eps0
+            return fp * (2.0 * eta - eta ** 2)
+        elif eps < eps20:
+            return fp * (1.0 - (1.0 - self._lambda_rs) * (eps - eps0) / (eps20 - eps0))
+        else:
+            return self._lambda_rs * fp
+
+    def raw_sigma_eps_curve(self, n_asc=30, n_desc=25):
+        """
+        Full raw σ–ε curve (NOT Abaqus CDP). Returns list of dicts with keys:
+        eps_total, sigma_mpa, eta, eps_in, branch, tag.
+        f_peak = fc_reported (ADAPTED).
+        """
+        eps0 = self._eps0_wang()
+        eps20 = self._eps20_wang()
+        Ec = self.b["Ec_mpa"]
+        pts = []
+        for i in range(n_asc + 1):
+            eps = eps0 * i / n_asc
+            s = self.sigma(eps)
+            eta = i / n_asc
+            pts.append({
+                "eps_total": round(eps, 8), "sigma_mpa": round(s, 4),
+                "eta": round(eta, 6), "eps_in": round(eps - s / Ec, 8),
+                "branch": "ascending", "tag": "ADAPTED",
+            })
+        for j in range(1, n_desc + 1):
+            eps = eps0 + (eps20 - eps0) * j / n_desc
+            s = self.sigma(eps)
+            eta = eps / eps0
+            pts.append({
+                "eps_total": round(eps, 8), "sigma_mpa": round(s, 4),
+                "eta": round(eta, 6), "eps_in": round(eps - s / Ec, 8),
+                "branch": "descending", "tag": "ADAPTED",
+            })
+        for k in range(1, 4):
+            eps = eps20 * (1.0 + 0.1 * k)
+            s = self.sigma(eps)
+            eta = eps / eps0
+            pts.append({
+                "eps_total": round(eps, 8), "sigma_mpa": round(s, 4),
+                "eta": round(eta, 6), "eps_in": round(eps - s / Ec, 8),
+                "branch": "residual", "tag": "ADAPTED",
+            })
+        return pts
+
+    def eps_in_analysis(self):
+        """
+        Analytical εin profile on ascending branch.
+        εin(η) = ε0×η − (f_peak/Ec)×(2η−η²)
+        Crossover: η_cross = 2 − alpha_wang = 2 − Ec×ε0/f_peak
+        Returns dict with quantitative analysis.
+        """
+        eps0 = self._eps0_wang()
+        fp = self._f_peak()
+        Ec = self.b["Ec_mpa"]
+        alpha_wang = Ec * eps0 / fp
+        eta_cross = 2.0 - alpha_wang
+        frac_neg = min(max(eta_cross, 0.0), 1.0)
+        # Minimum εin: dεin/dη = 0 → η_min = 1 − alpha_wang/2
+        eta_min = 1.0 - alpha_wang / 2.0
+        if 0.0 < eta_min < 1.0:
+            eps_in_min = eps0 * eta_min - (fp / Ec) * (2.0 * eta_min - eta_min ** 2)
+        else:
+            eps_in_min = min(0.0, eps0 - fp / Ec)
+        return {
+            "eps0_wang": round(eps0, 8),
+            "eps20_wang": round(self._eps20_wang(), 8),
+            "alpha_wang": round(alpha_wang, 6),
+            "eta_crossover": round(eta_cross, 6),
+            "pct_ascending_negative": round(100.0 * frac_neg, 2),
+            "eps_in_at_peak": round(eps0 - fp / Ec, 8),
+            "eps_in_min": round(eps_in_min, 8),
+            "initial_slope_mpa": round(2.0 * fp / eps0, 1),
+            "tag": "ADAPTED: f_peak=fc_reported; Wang Eq.7 ε0; Eq.10-11 ε20; lambda_rs=0.30",
+        }
 
 
-class _C4YanBlocked(BaseModel):
+# ── C4 YAN 2010 (VIA FAKEH 2025) ─────────────────────────────────────────────
+
+class C4YanCompression(BaseModel):
     """
-    C4: Yan (2010) — BLOCKED.
+    C4: Yan (2010) rational formulas — source equations verified; CDP TABLE BLOCKED.
 
-    BLOCKER 1 — αa > alpha for all batches:
-      Ascending: σ = f'c × [αa×η − η²] / [1 + (αa−2)×η], η = ε/εc0
-      Initial tangent = αa × f'c/εc0. For αa=1.1 (lower bound):
-        Batch 1: αa/alpha = 1.1/1.054 = 1.044 → εin < 0 for η < 0.895 (89% of ascending)
-        Batch 2: αa/alpha = 1.1/0.988 = 1.113 → εin < 0 for η < 0.917 (92% of ascending)
-        Batch 3: αa/alpha = 1.1/1.091 = 1.008 → εin < 0 for η < 0.812 (81% of ascending)
-      Negative εin spans 81–92% of ascending — NOT clippable without expert approval.
+    Source: Fakeh et al. (2025) Table 3 (SECONDARY; Yan 2010 original not in repo).
+    Provenance: Yan G., Experimental Study on Strength and Deformation of Reactive
+    Powder Concrete Under Triaxial Compression, Yantai, China, pp.383-386 (2010).
 
-    BLOCKER 2 — Parameter ranges (not single values):
-      αa = 1.1–1.138 (range, not a single value)
-      αd = 0.193–0.312 (range, not a single value)
-      Exact batch-specific values require Yan (2010) original paper.
-      Yan (2010) is NOT in 01_SOURCES/02_SECONDARY_REFERENCE.
+    Equations (η = ε/εc0, εc0 = reported ecp):
+      Ascending  (0 ≤ η ≤ 1):  σ = fc × (αa×η − η²) / [1 + (αa−2)×η]
+      Descending (η ≥ 1):      σ = fc × (αd×η) / [1 + (αd−2)×η + η²]
+      Continuity: both branches give fc at η=1; both have zero slope at peak. ✓
+      αa ∈ [1.1, 1.138] (range only — no unique value for Hosseini batches)
+      αd ∈ [0.193, 0.312] (range only)
+      Initial tangent: dσ/dε|0 = αa × fc/εc0
 
-    Resolution: Obtain Yan (2010) paper + expert engineering decision on ascending εin.
+    CDP BLOCKER — Initial tangent > Ec for all batches:
+      k = Ec×εcp/fc: B1=1.054, B2=0.988, B3=1.091; all < αa ≥ 1.1.
+      Crossover η_cross = (αa−k) / [1 + k×(αa−2)].
+      For αa=1.1 (lower bound): B1 η_cross≈0.895 (89.6% negative),
+        B2 η_cross≈1.011 (100% negative), B3 η_cross≈0.489 (48.9% negative).
+      For αa=1.138 (upper bound): B1 ~91.9%, B2 100%, B3 ~78.8%.
+      Use raw_sigma_eps_curve() / eps_in_analysis() for comparison.
     """
     MODEL_ID = "C4"
     STATUS = ModelStatus.BLOCKED
-    SOURCE_PAPER = "Yan (2010) — αa > alpha (negative ascending εin), parameter ranges"
+    SOURCE_PAPER = "Yan (2010) via Fakeh et al. (2025) Table 3 [SECONDARY SOURCE]"
     BLOCKED_REASON = (
-        "Yan ascending αa=1.1–1.138 > alpha≈0.988–1.091 for all batches. "
-        "εin < 0 for 81–92% of the ascending branch. "
-        "Additionally αa and αd given as ranges only; Yan (2010) paper not in sources."
+        "Ascending rational formula: initial tangent αa×fc/εc0 > Ec for all batches "
+        "(αa ∈ [1.1,1.138]; k=Ec×εcp/fc ≈ 0.988–1.091). "
+        "εin < 0 for ~49–100% of ascending branch (batch/αa-dependent). "
+        "αa, αd are parameter ranges only from secondary source (Fakeh Table 3); "
+        "no unique calibration for Hosseini batches without Yan (2010) original paper."
     )
+    ALPHA_A_RANGE = (1.1, 1.138)
+    ALPHA_D_RANGE = (0.193, 0.312)
 
-    def __init__(self, _batch_data):
-        pass
+    def __init__(self, batch_data):
+        self.b = batch_data
+
+    def sigma_ascending(self, eps, alpha_a):
+        """Yan ascending: σ = fc×(αa×η−η²)/[1+(αa−2)×η], η=ε/εc0."""
+        ecp = self.b["ecp"]
+        fc = self.b["fc_mpa"]
+        if eps <= 0:
+            return 0.0
+        eta = min(eps / ecp, 1.0)
+        denom = 1.0 + (alpha_a - 2.0) * eta
+        if abs(denom) < 1e-12:
+            return fc
+        return fc * (alpha_a * eta - eta ** 2) / denom
+
+    def sigma_descending(self, eps, alpha_d):
+        """Yan descending: σ = fc×(αd×η)/[1+(αd−2)×η+η²], η=ε/εc0."""
+        ecp = self.b["ecp"]
+        fc = self.b["fc_mpa"]
+        eta = max(eps / ecp, 1.0)
+        denom = 1.0 + (alpha_d - 2.0) * eta + eta ** 2
+        if abs(denom) < 1e-12:
+            return 0.0
+        return max(fc * alpha_d * eta / denom, 0.0)
+
+    def raw_sigma_eps_curve(self, alpha_a=1.1, alpha_d=0.193, n_asc=30, n_desc=40):
+        """
+        Full raw σ–ε curve (NOT Abaqus CDP). Returns list of dicts with keys:
+        eps_total, sigma_mpa, eta, eps_in, branch, tag.
+        alpha_a and alpha_d must be specified from ALPHA_A_RANGE / ALPHA_D_RANGE.
+        Descending truncated when σ < 0.05×fc or η > 6.
+        """
+        ecp = self.b["ecp"]
+        Ec = self.b["Ec_mpa"]
+        fc = self.b["fc_mpa"]
+        pts = []
+        # Ascending
+        for i in range(n_asc + 1):
+            eps = ecp * i / n_asc
+            s = self.sigma_ascending(eps, alpha_a) if eps > 0 else 0.0
+            eta = i / n_asc
+            pts.append({
+                "eps_total": round(eps, 8), "sigma_mpa": round(s, 4),
+                "eta": round(eta, 6), "eps_in": round(eps - s / Ec, 8),
+                "branch": "ascending",
+                "tag": f"SECONDARY (αa={alpha_a})",
+            })
+        # Descending to σ = 0.05×fc or η = 6
+        for j in range(1, n_desc + 1):
+            eps = ecp * (1.0 + 5.0 * j / n_desc)
+            s = self.sigma_descending(eps, alpha_d)
+            if s < 0.05 * fc:
+                break
+            eta = eps / ecp
+            pts.append({
+                "eps_total": round(eps, 8), "sigma_mpa": round(s, 4),
+                "eta": round(eta, 6), "eps_in": round(eps - s / Ec, 8),
+                "branch": "descending",
+                "tag": f"SECONDARY (αd={alpha_d})",
+            })
+        return pts
+
+    def eps_in_analysis(self, alpha_a_list=None):
+        """
+        Analytical εin crossover on ascending branch for given αa values.
+        Crossover: η_cross = (αa−k) / [1 + k×(αa−2)], k = Ec×εcp/fc.
+        Returns dict keyed by alpha_a value.
+        """
+        if alpha_a_list is None:
+            alpha_a_list = list(self.ALPHA_A_RANGE)
+        ecp = self.b["ecp"]
+        fc = self.b["fc_mpa"]
+        Ec = self.b["Ec_mpa"]
+        k = Ec * ecp / fc
+        results = {}
+        for aa in alpha_a_list:
+            denom = 1.0 + k * (aa - 2.0)
+            eta_cross = (aa - k) / denom if abs(denom) > 1e-12 else 1.0
+            frac_neg = min(max(eta_cross, 0.0), 1.0)
+            results[aa] = {
+                "k": round(k, 6),
+                "alpha_a": aa,
+                "eta_crossover": round(eta_cross, 6),
+                "pct_ascending_negative": round(100.0 * frac_neg, 2),
+                "initial_tangent_mpa": round(aa * fc / ecp, 1),
+            }
+        return results
 
 
 # ── MODEL REGISTRY ───────────────────────────────────────────────────────────
@@ -451,12 +658,12 @@ COMPRESSION_MODELS = {
     "REF_POPOVICS": PopovicsCompression,
     "C1": C1GraybealFakehCompression,
     "C2": C2ZhaoCompression,
-    "C3": _C3WangBlocked,
-    "C4": _C4YanBlocked,
+    "C3": C3WangCompression,
+    "C4": C4YanCompression,
 }
 
 # Convenience factory aliases (backward-compatible)
 def C1_STUB(batch_data): return C1GraybealFakehCompression(batch_data)
 def C2_STUB(batch_data): return C2ZhaoCompression(batch_data)
-def C3_STUB(batch_data): return _C3WangBlocked(batch_data)
-def C4_STUB(batch_data): return _C4YanBlocked(batch_data)
+def C3_STUB(batch_data): return C3WangCompression(batch_data)
+def C4_STUB(batch_data): return C4YanCompression(batch_data)

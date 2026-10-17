@@ -86,6 +86,48 @@ def run(project_root):
                 result["notes"].append(
                     f"BLOCKED: {getattr(inst, 'BLOCKED_REASON', 'see model docstring')}"
                 )
+                # Generate raw diagnostic plots if model provides raw curves
+                if hasattr(inst, "raw_sigma_eps_curve"):
+                    try:
+                        from cdp_builder.plots import plot_raw_compression_curve
+                        curves = {}
+                        if model_id == "C3":
+                            an = inst.eps_in_analysis()
+                            pct = an["pct_ascending_negative"]
+                            pts = inst.raw_sigma_eps_curve()
+                            curves[f"Wang (ADAPTED); εin<0: {pct:.0f}% asc"] = pts
+                            result["notes"].append(
+                                f"εin analysis: α_Wang={an['alpha_wang']:.4f}; "
+                                f"η_cross={an['eta_crossover']:.4f}; "
+                                f"εin<0 on {pct:.1f}% of ascending; "
+                                f"εin_peak={an['eps_in_at_peak']:.2e}; "
+                                f"ε0_Wang={an['eps0_wang']:.5f}; ε20={an['eps20_wang']:.5f}"
+                            )
+                        elif model_id == "C4":
+                            an = inst.eps_in_analysis()
+                            for aa, ad in zip(inst.ALPHA_A_RANGE, inst.ALPHA_D_RANGE):
+                                pts = inst.raw_sigma_eps_curve(alpha_a=aa, alpha_d=ad)
+                                pct = an[aa]["pct_ascending_negative"]
+                                curves[f"Yan αa={aa} αd={ad}; εin<0: {pct:.0f}% asc"] = pts
+                            an_summary = "; ".join(
+                                f"αa={aa}: {an[aa]['pct_ascending_negative']:.1f}%"
+                                for aa in inst.ALPHA_A_RANGE
+                            )
+                            result["notes"].append(
+                                f"εin<0 on ascending: {an_summary} "
+                                f"(k=Ec×εcp/fc={list(an.values())[0]['k']:.4f})"
+                            )
+                        if curves:
+                            png_name = f"B{batch_id}_{model_id}_raw_curve.png"
+                            png_path = os.path.join(plots_dir, png_name)
+                            plot_raw_compression_curve(
+                                curves, batch_id, model_id,
+                                bdata["fc_mpa"], bdata["ecp"],
+                                png_path,
+                            )
+                            result["plot"] = os.path.relpath(png_path, project_root)
+                    except Exception as exc:
+                        result["notes"].append(f"Raw plot error: {exc}")
                 results.append(result)
                 continue
 
@@ -231,7 +273,10 @@ def run(project_root):
     print(f"  DEGENERATE (Popovics/Batch2): {n_degen}")
     print(f"  QA errors:                    {n_qa_fail}")
     print(f"  ERROR:                        {n_err}")
-    print(f"\nReport: {report_path}")
+    try:
+        print(f"\nReport: {report_path}")
+    except UnicodeEncodeError:
+        print("\nReport: [path contains non-ASCII characters; see G1_MATERIAL_REPORT.md]")
     return 0 if n_qa_fail == 0 and n_err == 0 else 1
 
 
@@ -298,12 +343,12 @@ def _write_report(results, report_path, project_root):
         "",
         "## Blockers",
         "",
-        "### BLOCKED models (equations available; technical/data issue prevents valid table)",
+        "### BLOCKED models (source equations available; raw σ–ε plots generated; CDP table blocked)",
         "",
-        "| Model | Blocker | Resolution required |",
-        "|-------|---------|---------------------|",
-        "| C3 | Ascending parabolic: initial slope 2f'c/εc0 >> Ec → εin < 0 for >50% of ascending (all batches). ε20 unknown. | Expert engineering decision + Wang (2016) paper |",
-        "| C4 | αa=1.1–1.138 > alpha≈0.988–1.091 → εin < 0 for 81–92% of ascending. αa/αd ranges only. | Expert engineering decision + Yan (2010) paper |",
+        "| Model | Source | Blocker summary | εin<0 on ascending | Resolution |",
+        "|-------|--------|-----------------|---------------------|------------|",
+        "| C3 | Wang (2016) Adv Mech Eng 8(2) — PRIMARY ✓ | Initial slope 2×fp/ε0 >> Ec (Wang Eq.7 ε0). ε20 from Eq.10-11 resolved. | B1:~96.6%, B2:~93.9%, B3:100% | Expert decision on ascending branch hybrid law |",
+        "| C4 | Yan (2010) via Fakeh (2025) Table 3 — SECONDARY | αa∈[1.1,1.138] > k≈0.988–1.091 for all batches. αa/αd are ranges only. | αa=1.1: B1:89.6%, B2:100%, B3:48.9%; αa=1.138: B1:91.9%, B2:100%, B3:78.8% | Yan (2010) original paper + engineering decision |",
         "",
         "### BLOCKED softening (hardening tables generated; post-peak unavailable)",
         "",

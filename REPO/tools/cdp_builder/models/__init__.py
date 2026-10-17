@@ -2,6 +2,8 @@ from .compression import (
     PopovicsCompression,
     C1GraybealFakehCompression,
     C2ZhaoCompression,
+    C3WangCompression,
+    C4YanCompression,
     COMPRESSION_MODELS,
     # Backward-compatible aliases
     C1_STUB, C2_STUB, C3_STUB, C4_STUB,

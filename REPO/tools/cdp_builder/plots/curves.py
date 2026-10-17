@@ -62,6 +62,61 @@ def plot_compression(rows, batch_id, model_id, fc_mpa, ecp, out_path):
     plt.close(fig)
 
 
+def plot_raw_compression_curve(curves_dict, batch_id, model_id, fc_mpa, ecp, out_path):
+    """
+    Diagnostic plot for BLOCKED compression models (C3, C4).
+    Shows raw σ–ε_total (top) and εin = ε − σ/Ec (bottom) for each labeled curve.
+    curves_dict: {label_str: list_of_dicts} where each dict has
+      eps_total, sigma_mpa, eps_in, branch.
+    NOT labeled as Abaqus-ready; clearly marked as raw source curves.
+    """
+    _check_mpl()
+    colors = ["steelblue", "darkorange", "seagreen", "firebrick", "mediumpurple"]
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(8, 8), sharex=False, constrained_layout=True)
+
+    for ci, (label, pts) in enumerate(curves_dict.items()):
+        c = colors[ci % len(colors)]
+        eps_asc = [p["eps_total"] for p in pts if p["branch"] == "ascending"]
+        sig_asc = [p["sigma_mpa"] for p in pts if p["branch"] == "ascending"]
+        ein_asc = [p["eps_in"]    for p in pts if p["branch"] == "ascending"]
+        eps_all = [p["eps_total"] for p in pts]
+        sig_all = [p["sigma_mpa"] for p in pts]
+        ein_all = [p["eps_in"]    for p in pts]
+        ax1.plot(eps_all, sig_all, color=c, lw=1.5, label=label, marker="o", ms=2)
+        ax2.plot(eps_all, ein_all, color=c, lw=1.5, label=label, marker="o", ms=2)
+        # Shade ascending region with εin < 0
+        neg_eps = [e for e, i in zip(eps_asc, ein_asc) if i < 0]
+        neg_ein = [i for i in ein_asc if i < 0]
+        if neg_eps:
+            ax2.fill_between(neg_eps, neg_ein, 0.0, alpha=0.12, color=c)
+
+    ax1.axhline(fc_mpa, color="gray", lw=0.8, ls="--", alpha=0.7, label=f"f'c={fc_mpa} MPa (reported)")
+    ax1.axvline(ecp, color="gray", lw=0.8, ls=":", alpha=0.7, label=f"εcp={ecp:.4f} (reported)")
+    ax2.axhline(0, color="k", lw=1.0)
+    ax2.axvline(ecp, color="gray", lw=0.8, ls=":", alpha=0.7)
+
+    ax1.set_ylabel("Compressive stress (MPa)", fontsize=10)
+    ax1.set_title(
+        f"RAW σ–ε — Batch {batch_id} / {model_id}  [NOT Abaqus CDP]\n"
+        f"f'c={fc_mpa} MPa, εcp={ecp:.4f} (REPORTED)",
+        fontsize=10,
+    )
+    ax1.legend(fontsize=7)
+    ax1.grid(True, alpha=0.3)
+
+    ax2.set_xlabel("Total strain ε (–)", fontsize=10)
+    ax2.set_ylabel("εin = ε − σ/Ec (–)", fontsize=10)
+    ax2.set_title("Inelastic strain profile  [shaded = CDP-blocked region (εin < 0)]", fontsize=9)
+    ax2.legend(fontsize=7)
+    ax2.grid(True, alpha=0.3)
+
+    _dir = os.path.dirname(out_path)
+    if _dir:
+        os.makedirs(_dir, exist_ok=True)
+    fig.savefig(out_path, dpi=150)
+    plt.close(fig)
+
+
 def plot_tension(rows, batch_id, model_id, ft_cr, et_cr, ft_loc, et_loc, out_path):
     """
     Plot stress (MPa) vs cracking strain for tension hardening table.
