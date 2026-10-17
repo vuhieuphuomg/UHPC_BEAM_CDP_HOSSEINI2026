@@ -1,0 +1,13 @@
+{
+  "files.exclude": {
+    "**/__pycache__": true
+  },
+  "python.analysis.extraPaths": [
+    "${workspaceFolder}/tools"
+  ],
+  "files.watcherExclude": {
+    "**/*.odb": true,
+    "**/*.cae": true,
+    "**/WORK/**": true
+  }
+}

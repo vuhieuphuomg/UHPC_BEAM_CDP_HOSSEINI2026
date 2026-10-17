@@ -62,19 +62,27 @@ def seed_and_mesh(model, part, global_seed=LC_GLOBAL_MM):
     return LC_GLOBAL_MM
 
 
+def seed_wire_part(part, element_size=LC_GLOBAL_MM):
+    """Alias for seed_rebar_wires — seeds a separate rebar wire Part."""
+    seed_rebar_wires(part, seed_size=element_size)
+
+
 def seed_rebar_wires(part, seed_size=LC_GLOBAL_MM):
     """
-    Seed wire features (rebar lines) for meshing as T3D2 truss elements.
+    Set T3D2 element type, seed edges, and generateMesh on a wire Part.
     NOT_TESTED_IN_ABAQUS.
     """
     if not _IN_ABAQUS:
         raise RuntimeError("mesh_builder must run inside Abaqus CAE kernel")
 
     truss_type = ElemType(elemCode=T3D2, elemLibrary=STANDARD)
-    wire_edges = part.edges  # all wire-type edges
-    part.setElementType(regions=part.Set(name="SET_WIRES", edges=wire_edges),
-                        elemTypes=(truss_type,))
+    wire_edges = part.edges
+    part.setElementType(
+        regions=part.Set(name="SET_WIRES", edges=wire_edges),
+        elemTypes=(truss_type,),
+    )
     part.seedEdgeBySize(edges=wire_edges, size=seed_size, deviationFactor=0.1)
+    part.generateMesh()   # must call or element count stays 0
 
 
 def refine_near_supports_and_load(part, x_west, x_load, x_east,

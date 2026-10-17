@@ -1,0 +1,11 @@
+{
+  "abaqus_executable": "abaqus",
+  "work_root": "C:\\Abaqus\\UHPC_BEAM_CDP\\WORK",
+  "source_pdf_local_path": "SET_AFTER_SYNC",
+  "drive_sync_root": "SET_ON_WINDOWS_ONLY",
+  "python3_command": "py -3",
+  "max_parallel_solver_jobs": 1,
+  "solver_authorized": false,
+  "approve_datacheck": false,
+  "approve_submit": false
+}

@@ -3,23 +3,18 @@ material_assignment.py — Read G1 CDP tables and assign materials in Abaqus 202
 
 NOT_TESTED_IN_ABAQUS: requires `abaqus cae noGUI script=...` to verify.
 
-Material naming convention:
-  UHPC_C{compression_model}_T{tension_model}_B{batch_id}
-  Example: UHPC_C1_T2_B3 — C1 compression, T2 tension, Batch 3 data.
+Rebar material data — SOURCE: Hosseini 2026 Table 3 (REPORTED, not invented):
+  M#10 Ø32.3mm (bottom bars): fy=690 MPa, Es=200,000 MPa
+  M#3  Ø9.5mm  (top bars):    fy=684 MPa, Es=196,000 MPa
+  NSS stirrups:                fy=463 MPa, Es=208,000 MPa
+  HSS stirrups:                fy=684 MPa, Es=196,000 MPa
 
-G1 CSV tables location:
-  03_MATERIALS/tables/B{n}_{MODEL}_compression.csv
-  03_MATERIALS/tables/B{n}_{MODEL}_tension.csv
-
-CDP parameters (fixed for all materials — Hosseini-independent):
-  Dilation angle ψ = 36° (typical UHPC range 30–40°; NEEDS_EXPERT_REVIEW)
-  Eccentricity  ε = 0.1
-  fb0/fc0       = 1.16
-  K             = 0.667 (2/3)
-  Viscosity     = 0.0 (no viscous regularization at G2 preparation stage)
-
-NEEDS_EXPERT_REVIEW: CDP dilation angle not calibrated from Hosseini data.
-  Must be set by engineer before solver run.
+CDP parameters — NEEDS_EXPERT_REVIEW for dilation angle:
+  Dilation angle ψ = 36°  (NEEDS_EXPERT_REVIEW: typical UHPC 30–40°)
+  Eccentricity      = 0.1
+  fb0/fc0           = 1.16
+  K                 = 0.667 (2/3)
+  Viscosity         = 0.0  (no viscous regularization at G2 prep stage)
 """
 
 import os
@@ -27,50 +22,81 @@ import csv
 
 try:
     from abaqus import mdb
-    from abaqusConstants import (
-        ISOTROPIC, ENGINEERING_CONSTANTS,
-        INCREMENTAL,
-    )
+    from abaqusConstants import ISOTROPIC
     _IN_ABAQUS = True
 except ImportError:
     _IN_ABAQUS = False
 
-# G1 tables root directory (relative to repo root)
-_G1_TABLES_DIR = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)),
-    "..", "03_MATERIALS", "tables"
-)
+# G1 tables root: abaqus_g2/ → up two levels → PROJECT_ROOT/03_MATERIALS/tables/
+# When __file__ is an 8.3 short path (non-ANSI Unicode drive), the launcher sets
+# UHPC_G2_DIR env var to the Unicode path so data file resolution still works.
+_env_g2 = os.environ.get("UHPC_G2_DIR", "")
+if _env_g2:
+    _G1_TABLES_DIR = os.path.normpath(os.path.join(
+        _env_g2, "..", "03_MATERIALS", "tables"
+    ))
+else:
+    _G1_TABLES_DIR = os.path.normpath(os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "..", "..", "03_MATERIALS", "tables"
+    ))
+if not os.path.isdir(_G1_TABLES_DIR):
+    raise EnvironmentError(
+        "G1 tables directory not found: {0}\n"
+        "Expected: PROJECT_ROOT/03_MATERIALS/tables/".format(_G1_TABLES_DIR)
+    )
 
 # CDP plastic parameters — NEEDS_EXPERT_REVIEW for dilation angle
 CDP_PLASTIC_PARAMS = {
-    "dilation_angle_deg": 36.0,     # NEEDS_EXPERT_REVIEW: typical UHPC 30-40°
+    "dilation_angle_deg": 36.0,   # NEEDS_EXPERT_REVIEW: typical UHPC 30-40°
     "eccentricity": 0.1,
     "fb0_fc0": 1.16,
     "K": 0.667,
-    "viscosity": 0.0,               # no viscous reg at G2 prep stage
+    "viscosity": 0.0,
 }
 
-# Poisson's ratio (assumed elastic isotropic)
-POISSON_RATIO = 0.2   # typical UHPC; NEEDS_EXPERT_REVIEW
+POISSON_RATIO_UHPC = 0.2    # typical UHPC, NEEDS_EXPERT_REVIEW
+POISSON_RATIO_STEEL = 0.3
 
-# MMFX rebar properties (elastic-perfectly-plastic; no hardening curve at G2)
-REBAR_STEEL = {
-    "Es_mpa": 200000.0,
-    "nu": 0.3,
-    "fy_mpa": 1379.0,   # MMFX Grade 4100 = 600ksi = ~4137 MPa...
-    # NEEDS_EXPERT_REVIEW: Grade 4100 = 4100 ksi? No — MPa.
-    # MMFX Grade 4100 (US): fy = 4100 psi × 6.895 = 28.3MPa? That seems wrong.
-    # MMFX CFRP rebar Grade 4 (4000 MPa)?
-    # Actually "Grade 4100" in Hosseini likely means Grade 4100 MPa yield.
-    # NEEDS_EXPERT_REVIEW: exact fy for MMFX Grade 4100 from Hosseini Table 1.
-    "tag": "NEEDS_EXPERT_REVIEW: MMFX Grade 4100 fy not confirmed from Hosseini Table 1",
+# Rebar material properties — Hosseini 2026 Table 3 (REPORTED)
+REBAR_MATERIALS = {
+    "M10_BOTTOM": {
+        "name": "STEEL_M10_BOT",
+        "Es_mpa": 200000.0,
+        "fy_mpa": 690.0,
+        "nu": POISSON_RATIO_STEEL,
+        "source": "Hosseini 2026 Table 3: M#10 Ø32.3mm MMFX",
+    },
+    "M3_TOP": {
+        "name": "STEEL_M3_TOP",
+        "Es_mpa": 196000.0,
+        "fy_mpa": 684.0,
+        "nu": POISSON_RATIO_STEEL,
+        "source": "Hosseini 2026 Table 3: M#3 Ø9.5mm MMFX",
+    },
+    "NSS_STIRRUP": {
+        "name": "STEEL_NSS_STR",
+        "Es_mpa": 208000.0,
+        "fy_mpa": 463.0,
+        "nu": POISSON_RATIO_STEEL,
+        "source": "Hosseini 2026 Table 3: NSS stirrups",
+    },
+    "HSS_STIRRUP": {
+        "name": "STEEL_HSS_STR",
+        "Es_mpa": 196000.0,
+        "fy_mpa": 684.0,
+        "nu": POISSON_RATIO_STEEL,
+        "source": "Hosseini 2026 Table 3: HSS stirrups",
+    },
 }
 
 
 def _read_csv_table(filepath):
-    """Read a G1 CDP table CSV; return list of row dicts."""
+    # io.open() uses CreateFileW on Windows Python 2.7 — handles non-ANSI Unicode paths.
+    # Open in binary mode so csv.DictReader receives bytes (required in Py2.7).
+    import io as _io
     rows = []
-    with open(filepath, "r") as f:
+    with _io.open(filepath, "rb") as f:
         reader = csv.DictReader(f)
         for row in reader:
             rows.append(row)
@@ -78,7 +104,6 @@ def _read_csv_table(filepath):
 
 
 def _compression_tuples(rows):
-    """Convert compression CSV rows to Abaqus (stress, eps_in) tuples."""
     result = []
     for row in rows:
         try:
@@ -92,7 +117,6 @@ def _compression_tuples(rows):
 
 
 def _tension_tuples(rows):
-    """Convert tension CSV rows to Abaqus (stress, cracking_strain) tuples."""
     result = []
     for row in rows:
         try:
@@ -106,30 +130,15 @@ def _tension_tuples(rows):
 
 
 def _find_table_file(batch_id, model_id, table_type):
-    """
-    Find the G1 CSV table file for a given batch/model/type.
-    table_type: 'compression' or 'tension'
-    Returns filepath or None if not found.
-    """
     fname = "B{0}_{1}_{2}.csv".format(batch_id, model_id, table_type)
     fpath = os.path.join(_G1_TABLES_DIR, fname)
-    if os.path.isfile(fpath):
-        return fpath
-    return None
+    return fpath if os.path.isfile(fpath) else None
 
 
 def create_uhpc_material(model, batch_id, comp_model_id, tens_model_id, Ec_mpa):
     """
-    Create a CDP UHPC material in the Abaqus model.
-
-    Args:
-        model: Abaqus mdb.models[name] object
-        batch_id: 1, 2, or 3
-        comp_model_id: e.g. 'C1', 'C2', 'C4_ADAPTED_LB'
-        tens_model_id: e.g. 'T2'
-        Ec_mpa: elastic modulus from batch data
-
-    Returns material name string, or raises if table files not found.
+    Create CDP UHPC material from G1 CSV tables.
+    Raises FileNotFoundError if G1 tables not found.
     NOT_TESTED_IN_ABAQUS.
     """
     if not _IN_ABAQUS:
@@ -137,7 +146,6 @@ def create_uhpc_material(model, batch_id, comp_model_id, tens_model_id, Ec_mpa):
 
     mat_name = "UHPC_{0}_{1}_B{2}".format(comp_model_id, tens_model_id, batch_id)
 
-    # Read G1 CSV tables
     comp_file = _find_table_file(batch_id, comp_model_id, "compression")
     tens_file = _find_table_file(batch_id, tens_model_id, "tension")
 
@@ -150,62 +158,55 @@ def create_uhpc_material(model, batch_id, comp_model_id, tens_model_id, Ec_mpa):
             "Tension table not found: B{0}_{1}_tension.csv in {2}".format(
                 batch_id, tens_model_id, _G1_TABLES_DIR))
 
-    comp_rows = _read_csv_table(comp_file)
-    tens_rows = _read_csv_table(tens_file)
-    comp_data = _compression_tuples(comp_rows)
-    tens_data = _tension_tuples(tens_rows)
+    comp_data = _compression_tuples(_read_csv_table(comp_file))
+    tens_data = _tension_tuples(_read_csv_table(tens_file))
 
     if not comp_data:
-        raise ValueError("Empty compression table for B{0} {1}".format(batch_id, comp_model_id))
+        raise ValueError("Empty compression table B{0} {1}".format(batch_id, comp_model_id))
     if not tens_data:
-        raise ValueError("Empty tension table for B{0} {1}".format(batch_id, tens_model_id))
+        raise ValueError("Empty tension table B{0} {1}".format(batch_id, tens_model_id))
 
     mat = model.Material(name=mat_name)
+    mat.Elastic(table=((Ec_mpa, POISSON_RATIO_UHPC),))
 
-    # Elastic
-    mat.Elastic(table=((Ec_mpa, POISSON_RATIO),))
-
-    # CDP plastic parameters
     p = CDP_PLASTIC_PARAMS
-    mat.ConcreteDamagedPlasticity(
-        table=((
-            p["dilation_angle_deg"],
-            p["eccentricity"],
-            p["fb0_fc0"],
-            p["K"],
-            p["viscosity"],
-        ),)
-    )
+    mat.ConcreteDamagedPlasticity(table=((
+        p["dilation_angle_deg"],
+        p["eccentricity"],
+        p["fb0_fc0"],
+        p["K"],
+        p["viscosity"],
+    ),))
 
-    # Compression hardening table: (stress, eps_in)
     mat.ConcreteCompressionHardening(table=tuple(comp_data))
-
-    # Tension stiffening table: (stress, cracking_strain), type=STRAIN (default)
+    # Tension: STRAIN type (mesh-dependent); use sigma-w DISPLACEMENT for production
     mat.ConcreteTensionStiffening(table=tuple(tens_data))
 
     return mat_name
 
 
-def create_rebar_material(model, mat_name="MMFX_REBAR"):
+def create_all_rebar_materials(model):
     """
-    Create elastic-perfectly-plastic rebar material.
-    NEEDS_EXPERT_REVIEW: fy not confirmed.
+    Create all 4 rebar materials (M10, M3, NSS, HSS) from Hosseini 2026 Table 3.
+    Returns dict {key: material_name_string}.
     NOT_TESTED_IN_ABAQUS.
     """
     if not _IN_ABAQUS:
         raise RuntimeError("material_assignment must run inside Abaqus CAE kernel")
 
-    mat = model.Material(name=mat_name)
-    mat.Elastic(table=((REBAR_STEEL["Es_mpa"], REBAR_STEEL["nu"]),))
-    # Plastic: (yield_stress, plastic_strain) — EP at G2, no hardening
-    mat.Plastic(table=((REBAR_STEEL["fy_mpa"], 0.0),))
-    return mat_name
+    created = {}
+    for key, props in REBAR_MATERIALS.items():
+        mat = model.Material(name=props["name"])
+        mat.Elastic(table=((props["Es_mpa"], props["nu"]),))
+        mat.Plastic(table=((props["fy_mpa"], 0.0),))  # elastic-perfectly-plastic
+        created[key] = props["name"]
+    return created
 
 
-def assign_section_to_part(model, assembly, part_name, instance_name,
-                            mat_name, section_name="SEC_UHPC_BEAM"):
+def assign_section_to_part(model, part, section_name, mat_name):
     """
-    Create homogeneous solid section and assign to entire beam part.
+    Create HomogeneousSolidSection and assign to ALL cells of the Part.
+    Calls SectionAssignment on the Part object, NOT on an assembly instance.
     NOT_TESTED_IN_ABAQUS.
     """
     if not _IN_ABAQUS:
@@ -216,8 +217,24 @@ def assign_section_to_part(model, assembly, part_name, instance_name,
         material=mat_name,
         thickness=None,
     )
-    region = assembly.instances[instance_name].cells
-    assembly.instances[instance_name].SectionAssignment(
-        region=region,
+    # ALL_CELLS set may already exist from geometry_builder.create_geometry_sets()
+    if "ALL_CELLS" not in [s for s in part.sets.keys()]:
+        part.Set(name="ALL_CELLS", cells=part.cells)
+    part.SectionAssignment(
+        region=part.sets["ALL_CELLS"],
         sectionName=section_name,
     )
+
+
+def assign_rebar_section_to_part(model, wire_part, section_name, mat_name, area_mm2):
+    """
+    Create TrussSection and assign to ALL edges of a wire part.
+    Must be called on the wire Part object, NOT on an assembly instance.
+    NOT_TESTED_IN_ABAQUS.
+    """
+    if not _IN_ABAQUS:
+        raise RuntimeError("material_assignment must run inside Abaqus CAE kernel")
+
+    model.TrussSection(name=section_name, material=mat_name, area=area_mm2)
+    edge_set = wire_part.Set(name="ALL_EDGES", edges=wire_part.edges)
+    wire_part.SectionAssignment(region=edge_set, sectionName=section_name)

@@ -1,0 +1,76 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "FE V5: validate registry",
+      "type": "process",
+      "command": "python",
+      "args": [
+        "tools/fe_control.py",
+        "validate"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "FE V5: status",
+      "type": "process",
+      "command": "python",
+      "args": [
+        "tools/fe_control.py",
+        "status"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "FE V5: show stage G0",
+      "type": "process",
+      "command": "python",
+      "args": [
+        "tools/fe_control.py",
+        "next"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "FE V5: preview UHPC_001",
+      "type": "process",
+      "command": "python",
+      "args": [
+        "tools/fe_control.py",
+        "preview",
+        "--run-id",
+        "UHPC_001"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "FE V5: run Python tests",
+      "type": "process",
+      "command": "python",
+      "args": [
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-v"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    }
+  ]
+}

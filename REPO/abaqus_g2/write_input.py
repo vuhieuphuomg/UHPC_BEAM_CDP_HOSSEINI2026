@@ -11,7 +11,7 @@ import os
 
 try:
     from abaqus import mdb
-    from abaqusConstants import ANALYSIS
+    from abaqusConstants import ANALYSIS, ON
     _IN_ABAQUS = True
 except ImportError:
     _IN_ABAQUS = False

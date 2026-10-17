@@ -1,0 +1,14 @@
+{
+  "project": "UHPC_BEAM_CDP_HOSSEINI2026",
+  "abaqus_executable": "abaqus",
+  "work_root": "C:\\Abaqus\\UHPC_BEAM_CDP\\WORK",
+  "drive_project_folder_id": "1Rb4jsh5d1gaVAJFoKxZxnUp3ENLr03Pm",
+  "solver_authorized": false,
+  "archive_enabled": false,
+  "max_retry_api": 2,
+  "max_parallel_solver_jobs": 1,
+  "built_model_gate_passed": false,
+  "material_gate_passed": false,
+  "abaqus_version_verified": false,
+  "allow_conditional_HSS": false
+}
