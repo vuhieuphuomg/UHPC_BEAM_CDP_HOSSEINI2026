@@ -955,5 +955,121 @@ class TestModelRegistryConsistency(unittest.TestCase):
                              msg=f"{key} should be IMPLEMENTED")
 
 
+class TestC1EpsPl(unittest.TestCase):
+    """Tests for eps_pl column added to C1 generate_table() (PROVISIONAL, dc=0)."""
+
+    def _make(self, batch_id):
+        return C1GraybealFakehCompression(BATCHES[batch_id])
+
+    def test_eps_pl_column_present(self):
+        for batch_id in (1, 2, 3):
+            rows = self._make(batch_id).generate_table()
+            for i, r in enumerate(rows):
+                self.assertIn("eps_pl", r,
+                              msg=f"C1 B{batch_id} row {i}: missing eps_pl column")
+
+    def test_eps_pl_equals_eps_in(self):
+        for batch_id in (1, 2, 3):
+            rows = self._make(batch_id).generate_table()
+            for i, r in enumerate(rows):
+                self.assertAlmostEqual(
+                    r["eps_pl"], r["inelastic_strain"], places=9,
+                    msg=f"C1 B{batch_id} row {i}: eps_pl != eps_in (dc=0 assumption)")
+
+    def test_eps_pl_tag_provisional(self):
+        for batch_id in (1, 2, 3):
+            rows = self._make(batch_id).generate_table()
+            for r in rows:
+                self.assertIn("PROVISIONAL", r["eps_pl_tag"],
+                              msg=f"C1 B{batch_id}: eps_pl_tag must say PROVISIONAL")
+
+
+class TestC2EpsPl(unittest.TestCase):
+    """Tests for eps_pl column added to C2 generate_table() (PROVISIONAL, dc=0)."""
+
+    def _make(self, batch_id):
+        return C2ZhaoCompression(BATCHES[batch_id])
+
+    def test_eps_pl_column_present(self):
+        for batch_id in (1, 2, 3):
+            rows = self._make(batch_id).generate_table()
+            for i, r in enumerate(rows):
+                self.assertIn("eps_pl", r,
+                              msg=f"C2 B{batch_id} row {i}: missing eps_pl column")
+
+    def test_eps_pl_equals_eps_in(self):
+        for batch_id in (1, 2, 3):
+            rows = self._make(batch_id).generate_table()
+            for i, r in enumerate(rows):
+                self.assertAlmostEqual(
+                    r["eps_pl"], r["inelastic_strain"], places=9,
+                    msg=f"C2 B{batch_id} row {i}: eps_pl != eps_in")
+
+    def test_eps_pl_tag_provisional(self):
+        for batch_id in (1, 2, 3):
+            rows = self._make(batch_id).generate_table()
+            for r in rows:
+                self.assertIn("PROVISIONAL", r["eps_pl_tag"])
+
+
+class TestT2SigmaW(unittest.TestCase):
+    """Tests for T2 generate_sigma_w_table(lc_mm)."""
+
+    def _make(self, batch_id):
+        return T2ZhaoTension(BATCHES[batch_id])
+
+    def test_sigma_w_table_returns_rows(self):
+        for batch_id in (1, 2, 3):
+            rows = self._make(batch_id).generate_sigma_w_table(lc_mm=25.0)
+            self.assertGreater(len(rows), 5,
+                               msg=f"T2 B{batch_id}: sigma-w table too short")
+
+    def test_first_row_w_zero(self):
+        for batch_id in (1, 2, 3):
+            rows = self._make(batch_id).generate_sigma_w_table(lc_mm=25.0)
+            self.assertAlmostEqual(rows[0]["crack_displacement_mm"], 0.0, places=6,
+                                   msg=f"T2 B{batch_id}: first row w must be 0 (first cracking)")
+
+    def test_all_stresses_positive(self):
+        for batch_id in (1, 2, 3):
+            rows = self._make(batch_id).generate_sigma_w_table(lc_mm=25.0)
+            for i, r in enumerate(rows):
+                self.assertGreater(r["stress_mpa"], 0.0,
+                                   msg=f"T2 B{batch_id} row {i}: stress_mpa <= 0")
+
+    def test_crack_displacement_strictly_increasing(self):
+        for batch_id in (1, 2, 3):
+            rows = self._make(batch_id).generate_sigma_w_table(lc_mm=25.0)
+            for i in range(1, len(rows)):
+                self.assertGreater(
+                    rows[i]["crack_displacement_mm"],
+                    rows[i - 1]["crack_displacement_mm"],
+                    msg=f"T2 B{batch_id}: w not strictly increasing at row {i}")
+
+    def test_wtu_scales_with_lc(self):
+        # wtu = eps_tu × lc → doubling lc should roughly double terminal w
+        for batch_id in (1, 2, 3):
+            rows_25 = self._make(batch_id).generate_sigma_w_table(lc_mm=25.0)
+            rows_50 = self._make(batch_id).generate_sigma_w_table(lc_mm=50.0)
+            w_last_25 = rows_25[-1]["crack_displacement_mm"]
+            w_last_50 = rows_50[-1]["crack_displacement_mm"]
+            ratio = w_last_50 / w_last_25
+            self.assertAlmostEqual(ratio, 2.0, delta=0.05,
+                                   msg=f"T2 B{batch_id}: wtu should scale linearly with lc")
+
+    def test_sigma_w_has_crack_displacement_key(self):
+        rows = self._make(1).generate_sigma_w_table(lc_mm=25.0)
+        for r in rows:
+            self.assertIn("crack_displacement_mm", r)
+            self.assertIn("stress_mpa", r)
+
+    def test_first_stress_is_ft_cr(self):
+        for batch_id in (1, 2, 3):
+            rows = self._make(batch_id).generate_sigma_w_table(lc_mm=25.0)
+            ft_cr = BATCHES[batch_id]["ft_cr_mpa"]
+            self.assertAlmostEqual(rows[0]["stress_mpa"], ft_cr, places=3,
+                                   msg=f"T2 B{batch_id}: first σ-w row must be ft_cr")
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

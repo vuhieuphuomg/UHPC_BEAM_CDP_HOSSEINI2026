@@ -290,6 +290,61 @@ class T2ZhaoTension(BaseModel):
             "lc_mm": "UNKNOWN — set from mesh characteristic length",
         }
 
+    def generate_sigma_w_table(self, lc_mm):
+        """
+        Abaqus-ready σ–w table: stress_mpa vs crack_displacement_mm.
+        Format: Abaqus *Concrete Tension Stiffening, type=DISPLACEMENT.
+        First row: (ft_cr, 0.0). Strictly increasing w. All σ > 0.
+
+        lc_mm: FE characteristic element length [mm].
+               This is the MESH ELEMENT size, NOT Fakeh (2025) λclc.
+               Use fracture_energy_lambda_clc() when lc is unknown.
+
+        Conversion: w = εck × lc_mm  (εck = ε_total − σ/Ec).
+        Hardening (εck ≈ 0 → small w): w = εck_hardening × lc_mm.
+        Softening (Zhao power law): σ = ft × (εt0/ε)^0.6 → w = εck × lc_mm.
+
+        WARNING: w range scales with lc_mm. The σ–w SHAPE is mesh-independent;
+        only the terminal crack opening wtu = εck_tu × lc_mm depends on lc_mm.
+        Do NOT substitute λclc for lc_mm here.
+        """
+        Ec = self.b["Ec_mpa"]
+        ft_loc = self.b["ft_loc_mpa"]
+        et_loc = self.b["et_loc"]
+        eps_ratio = (self.ftu_ratio) ** (-1.0 / self._alpha_t)
+        eps_tu = et_loc * eps_ratio
+
+        # Hardening rows: convert εck → w = εck × lc_mm
+        hardening = _bilinear_hardening_rows(self.b, self.n_hardening)
+        rows = []
+        for row in hardening:
+            w = row["cracking_strain"] * lc_mm
+            rows.append({
+                "stress_mpa": row["stress_mpa"],
+                "crack_displacement_mm": round(w, 6),
+                "tag": row["tag"],
+            })
+
+        # Softening rows
+        prev_w = rows[-1]["crack_displacement_mm"]
+        for j in range(1, self.n_softening + 1):
+            eps = et_loc + (eps_tu - et_loc) * j / self.n_softening
+            sigma = ft_loc * (et_loc / eps) ** self._alpha_t
+            if sigma <= 0:
+                break
+            eps_ck = eps - sigma / Ec
+            w = eps_ck * lc_mm
+            if w <= prev_w:
+                w = prev_w + 1e-6
+            rows.append({
+                "stress_mpa": round(sigma, 4),
+                "crack_displacement_mm": round(w, 6),
+                "tag": "DERIVED",
+            })
+            prev_w = w
+
+        return rows
+
     def fracture_energy_lambda_clc(self):
         """
         Estimate fracture energy GFI [N/mm = MPa·mm] using Fakeh λclc as localization length.

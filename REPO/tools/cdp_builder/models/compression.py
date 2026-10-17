@@ -154,8 +154,8 @@ class C1GraybealFakehCompression(BaseModel):
 
     Post-peak (Fakeh Eq.9): σ(ε) = σ_peak − M × (ε − εc0_model)
       M = 7061.5 × λf^(−0.411),  λf = vf × (l/df)
-      Fiber dims ASSUMED: l=13mm, df=0.2mm (not reported in Hosseini 2026).
-      λf tags: ADOPTED (depends on ASSUMED fiber geometry).
+      Fiber dims CONFIRMED: l=13mm, df=0.2mm (Section 2.2.1 p.3, Hosseini 2026).
+      See CHANGELOG C-002 (updated ASSUMED→CONFIRMED 2026-10-17).
 
     εc0_model: found numerically (where dσ/dε = 0). May differ from reported ecp.
     σ_peak: model peak stress (may differ from reported f'c by ≤5% typical).
@@ -271,6 +271,10 @@ class C1GraybealFakehCompression(BaseModel):
                 row = dict(row, inelastic_strain=round(ei, 8))
             cleaned.append(row)
             prev = ei
+        # eps_pl = eps_in when dc=0 (no damage table at G1) — PROVISIONAL
+        for row in cleaned:
+            row["eps_pl"] = row["inelastic_strain"]
+            row["eps_pl_tag"] = "dc=0 PROVISIONAL: no damage table at G1"
         return cleaned
 
     def model_vs_reported_deviation(self):
@@ -370,6 +374,10 @@ class C2ZhaoCompression(BaseModel):
                 row = dict(row, inelastic_strain=round(ei, 8))
             cleaned.append(row)
             prev = ei
+        # eps_pl = eps_in when dc=0 (no damage table at G1) — PROVISIONAL
+        for row in cleaned:
+            row["eps_pl"] = row["inelastic_strain"]
+            row["eps_pl_tag"] = "dc=0 PROVISIONAL: no damage table at G1"
         return cleaned
 
     def ecp_model_vs_reported(self):

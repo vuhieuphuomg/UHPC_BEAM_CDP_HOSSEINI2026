@@ -34,35 +34,37 @@ f'c = 153.2 MPa · Ec = 47.3 GPa · εcp = 0.0032 remain as REPORTED in all sour
 
 ---
 
-## C-002 — 2026-10-17 — Fiber dimensions ASSUMED for C1 post-peak and λf calculation
+## C-002 — 2026-10-17 — Fiber dimensions CONFIRMED for C1 post-peak and λf calculation
 
-**Classification:** C — engineering parameter (ASSUMED, not from source)  
-**Stage:** G1_MATERIAL_TABLE_VALID — recorded as HOLD condition  
+**Classification:** C — engineering parameter (initially ASSUMED 2026-10-17; CONFIRMED 2026-10-17 same session)  
+**Stage:** G1_MATERIAL_TABLE_VALID — HOLD condition RESOLVED for fiber dims  
 
 **Context:**  
 C1 Graybeal–Fakeh post-peak slope M = 7061.5 × λf^(−0.411) (Fakeh 2025 Eq.9/Table 3) requires  
-fiber reinforcement index λf = vf × (l/df). Fiber dimensions (l = length, df = diameter) are  
-NOT reported in Hosseini 2026 Table 2 or any confirmed source for these UHPC batches.
+fiber reinforcement index λf = vf × (l/df). Fiber dimensions initially recorded as ASSUMED.
 
-**Decision:**  
-Use standard UHPC straight steel fiber dimensions: l=13.0 mm, df=0.2 mm (ASSUMED).  
-These values are consistent with the majority of specimens in Fakeh 2025 Table 1 calibration database.
+**Resolution (2026-10-17):**  
+SPECIMEN_GEOMETRY_AUDITED_V5.csv rows confirm:  
+- `fiber_diameter = 0.2 mm — REPORTED — "Section 2.2.1 p.3"` (Hosseini 2026)  
+- `fiber_length = 13 mm — REPORTED — "Section 2.2.1 p.3"` (Hosseini 2026)  
 
-λf values (ASSUMED):  
-- Batch 1 (vf=2%): λf = 0.02 × 65 = 1.30 → M ≈ 6337 MPa/strain  
+l=13.0 mm, df=0.2 mm are CONFIRMED directly from Hosseini (2026) Section 2.2.1, p.3.  
+The assumed values matched exactly. No change to λf values or M calculations required.
+
+**CONFIRMED λf values:**  
+- Batch 1 (vf=2%): λf = 0.02 × (13/0.2) = 0.02 × 65 = 1.30 → M ≈ 6337 MPa/strain  
 - Batch 2 (vf=2%): λf = 1.30 → M ≈ 6337 MPa/strain  
-- Batch 3 (vf=1%): λf = 0.65 → M ≈ 8428 MPa/strain  
+- Batch 3 (vf=1%): λf = 0.01 × 65 = 0.65 → M ≈ 8428 MPa/strain  
 
 **Scope:**  
-- C1 post-peak rows are tagged ADOPTED (depend on ASSUMED fiber dims).  
+- C1 post-peak rows remain tagged ADOPTED (M is model fit, not direct measurement).  
 - C1 ascending branch is INDEPENDENT of fiber dims (uses only Ec, fc, ac, bc).  
-- T1 Tian model λf-based prediction (fte, ft, εte, εt0) is NOT used; Hosseini  
-  measured values used instead. T1 hardening table is INDEPENDENT of fiber dims.  
-- Must be revised if fiber specifications are confirmed from Hosseini source.
+- T1 Tian model λf-based prediction is NOT used; Hosseini measured values are used instead.  
+- C1 docstring updated to CONFIRMED. BLOCKERS.md Blocker 14 RESOLVED.
 
-**Required action before G1=PASS:**  
-Obtain fiber dimensions from Hosseini 2026 supplementary data or equipment records.  
-If confirmed = 0.2mm × 13mm → C-002 VALIDATED. If different → recalculate M and retag.
+**Source evidence:**  
+`02_EXPERIMENT/03_GEOMETRY_REINFORCEMENT/SPECIMEN_GEOMETRY_AUDITED_V5.csv`,  
+rows `fiber_diameter` and `fiber_length`, tag=REPORTED, source="Section 2.2.1 p.3".
 
 ---
 
@@ -126,6 +128,50 @@ eps_pl column added to all C4_ADAPTED tables (= eps_in at G1; dc=0, no damage ta
 - Do NOT select one αa/αd pair solely because it matches experimental data (engineer decision required).
 - Do NOT use for holdout batch comparison without explicit approval.
 - FE matrix update is a separate step: engineer to review all 4 variants and decide which enter the run matrix.
+
+---
+
+## C-005 — 2026-10-17 — G1 eps_pl added C1/C2; T2 sigma-w implemented; G2 Abaqus preparation started
+
+**Classification:** A — code (eps_pl columns, T2 sigma-w method, G2 scripts)  
+**Stage:** G1_MATERIAL_TABLE_VALID (HOLD) + G2_ABAQUS_PREPARATION (PREPARATION, not PASS)
+
+### Part A — G1 completions
+
+**eps_pl column added to C1 and C2:**  
+Both C1GraybealFakehCompression and C2ZhaoCompression generate_table() now include  
+`eps_pl` (= eps_in) and `eps_pl_tag = "dc=0 PROVISIONAL: no damage table at G1"`.  
+Rationale: eps_pl = eps_in when damage variable dc=0 (Abaqus CDP requirement).  
+At G1, no damage law is calibrated → tagged PROVISIONAL.
+
+**T2 sigma-w method added:**  
+`T2ZhaoTension.generate_sigma_w_table(lc_mm)` returns Abaqus-ready stress vs  
+crack_displacement_mm table (type=DISPLACEMENT format). Requires FE element size lc_mm.  
+Conversion: w = εck × lc_mm for each row. Shape mesh-independent; w scale depends on lc.  
+Do NOT substitute λclc (Fakeh calibration length) for lc_mm in this method.
+
+**C-002 resolved:**  
+Fiber dims l=13mm, df=0.2mm confirmed REPORTED in SPECIMEN_GEOMETRY_AUDITED_V5.csv  
+(Section 2.2.1 p.3). CHANGELOG C-002 updated ASSUMED→CONFIRMED. BLOCKERS 14 RESOLVED.
+
+### Part B — G2 Abaqus preparation
+
+Abaqus scripting framework created at `REPO/abaqus_g2/`:  
+- `configs/specimen_configs.py`: all 12 T-beam configs as Python dicts; support/load coords from G0 audit  
+- `geometry_builder.py`: T-section (web 180×400 + flange 400×100) solid extrusion 5000mm  
+- `reinforcement_builder.py`: longitudinal rebar wires; bottom/top bar placement  
+- `support_loading_builder.py`: support BCs + point load per config  
+- `material_assignment.py`: reads G1 CSV tables, assigns CDP materials  
+- `mesh_builder.py`: mesh sizing and element type settings  
+- `model_preflight.py`: geometry/rebar/BC/mesh validation checks  
+- `run_b02.py`: B02 orchestrator (first specimen, no stirrups, a/d=2.7)  
+
+**Constraints:**  
+- NOT_TESTED_IN_ABAQUS: all scripts require `abaqus cae noGUI` to verify  
+- solver_authorized=false: no .inp submission, no solver run  
+- G2=PREPARATION only: no gate passed  
+- bar_cover=NOT_REPORTED: bottom bar centroid placed at d=410mm from top (Y=90mm from soffit); tag NEEDS_EXPERT_REVIEW  
+- Bottom bar arrangement (6×Ø32.3mm bundled in 180mm web): 3 bundles × 2 bars at X=−54,0,+54mm; NEEDS_EXPERT_REVIEW
 
 ---
 

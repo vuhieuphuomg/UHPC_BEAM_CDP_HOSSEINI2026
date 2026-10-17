@@ -2,7 +2,7 @@
   "schema_version": "5.0",
   "project_id": "UHPC_BEAM_CDP_HOSSEINI2026",
   "active_stage": "G1_MATERIAL_TABLE_VALID",
-  "next_action": "ENGINEER_REVIEW_C4_ADAPTED_2x2_VARIANTS_SELECT_FE_MODEL_THEN_UPDATE_MATRIX",
+  "next_action": "ENGINEER_REVIEW: (1) select compression model C1 or C4_ADAPTED variant for FE matrix; (2) confirm CDP dilation angle psi=36deg for Abaqus G2; (3) confirm T2 tension type STRAIN/DISPLACEMENT (sigma-w needs lc_mm from mesh); (4) confirm MMFX rebar fy from Hosseini Table 1; (5) confirm bottom bar bundle arrangement. Then: abaqus cae noGUI script=abaqus_g2/run_b02.py",
   "last_verified_abaqus_release": null,
   "solver_authorized": false,
   "automatic_submit_enabled": false,
